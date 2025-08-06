@@ -1,0 +1,6 @@
+providers:
+  ollama:
+    class: OllamaProvider
+    config:
+      model: ${OLLAMA_MODEL}
+      host: ${OLLAMA_HOST}
