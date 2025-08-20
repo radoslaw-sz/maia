@@ -121,4 +121,4 @@ class TestConversationSessions(MaiaTest):
 
         with pytest.raises(AssertionError, match=r"Agent Alice sent two messages in a row."):
             # This will be called in teardown, but we can call it manually for testing
-            ConversationValidator(session).validate()
+            self.run_validator(ConversationValidator(session))

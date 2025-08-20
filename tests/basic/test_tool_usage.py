@@ -21,7 +21,10 @@ class TestToolUsage(MaiaTest):
     def setup_agents(self):
         self.create_agent(
             name="Alice",
-            provider=self.get_provider("ollama"),
+            provider=GenericLiteLLMProvider(config={
+                "model": "ollama/mistral",
+                "api_base": "http://localhost:11434"
+            }),
             system_message="You are a weather assistant. Only describe the weather.",
             tools=["weather_api"]
         )

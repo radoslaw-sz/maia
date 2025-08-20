@@ -35,8 +35,12 @@ ENV/
 # Testing
 .coverage
 htmlcov/
+test_reports/
 .pytest_cache/
 .tox/
+test_results.json
+pytest_raw_report.json
+./*.json
 
 # Environment variables
 .env

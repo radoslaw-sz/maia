@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Test Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f0f23;
+            color: #e0e6ed;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #2a2d47;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .test-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #64b5f6, #42a5f5, #1e88e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .test-meta {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+        
+        .test-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        
+        .status-passed {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+        
+        .status-failed {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        
+        .status-running {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .metric-card {
+            background: rgba(26, 26, 46, 0.6);
+            border: 1px solid #2a2d47;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #64b5f6;
+            margin-bottom: 4px;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .sidebar {
+            background: rgba(26, 26, 46, 0.6);
+            border: 1px solid #2a2d47;
+            border-radius: 16px;
+            padding: 24px;
+            height: fit-content;
+            backdrop-filter: blur(10px);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 32px;
+        }
+        
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #e0e6ed;
+        }
+        
+        .agent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .agent-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(15, 15, 35, 0.6);
+            border: 1px solid #2a2d47;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .agent-item:hover {
+            border-color: #64b5f6;
+            transform: translateY(-1px);
+        }
+        
+        .agent-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        
+        .agent-avatar.customer { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .agent-avatar.inventory { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .agent-avatar.pricing { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .agent-avatar.analytics { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        
+        .agent-info {
+            flex-grow: 1;
+        }
+        
+        .agent-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .agent-role {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+        
+        .agent-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: #64b5f6;
+        }
+        
+        .tool-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .tool-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(15, 15, 35, 0.4);
+            border: 1px solid rgba(42, 45, 71, 0.6);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .tool-name {
+            color: #e0e6ed;
+        }
+        
+        .tool-count {
+            background: rgba(100, 181, 246, 0.2);
+            color: #64b5f6;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .timeline-container {
+            background: rgba(26, 26, 46, 0.6);
+            border: 1px solid #2a2d47;
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        
+        .timeline-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #e0e6ed;
+        }
+        
+        .timeline-controls {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .timeline-filter {
+            padding: 8px 16px;
+            background: rgba(15, 15, 35, 0.6);
+            border: 1px solid #2a2d47;
+            border-radius: 8px;
+            color: #e0e6ed;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .timeline-filter.active {
+            background: rgba(100, 181, 246, 0.2);
+            border-color: #64b5f6;
+            color: #64b5f6;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #64b5f6, #42a5f5, #1e88e5);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 24px;
+            padding-left: 40px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -29px;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #64b5f6;
+            border: 3px solid #0f0f23;
+            z-index: 2;
+        }
+        
+        .timeline-item.message::before { background: #64b5f6; }
+        .timeline-item.tool::before { background: #f59e0b; }
+        .timeline-item.error::before { background: #ef4444; }
+        
+        .interaction-card {
+            background: rgba(15, 15, 35, 0.6);
+            border: 1px solid #2a2d47;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .interaction-card:hover {
+            border-color: rgba(100, 181, 246, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .interaction-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .interaction-type {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .type-icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .type-icon.message { background: #64b5f6; }
+        .type-icon.tool { background: #f59e0b; }
+        .type-icon.error { background: #ef4444; }
+        
+        .interaction-time {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+        
+        .interaction-participants {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .participant {
+            background: rgba(100, 181, 246, 0.1);
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            color: #64b5f6;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .interaction-content {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(42, 45, 71, 0.6);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #d4d4d8;
+        }
+        
+        .tool-usage {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        
+        .tool-usage-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #f59e0b;
+            font-size: 0.9rem;
+        }
+        
+        .tool-usage-content {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #fbbf24;
+        }
+        
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(42, 45, 71, 0.6);
+        }
+        
+        .performance-item {
+            text-align: center;
+        }
+        
+        .performance-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #64b5f6;
+        }
+        
+        .performance-label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+        
+        .error-content {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            color: #fca5a5;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .expandable {
+            cursor: pointer;
+        }
+        
+        .expandable .expand-icon {
+            transition: transform 0.2s ease;
+        }
+        
+        .expandable.expanded .expand-icon {
+            transform: rotate(90deg);
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .collapsible-content.expanded {
+            max-height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="test-title">Customer Service Integration Test</h1>
+            <div class="test-meta">
+                <span>Test ID: test_20240802_143022</span>
+                <span>Duration: 2.3s</span>
+                <span>Started: Aug 2, 2024 14:30:22</span>
+                <span>Ended: Aug 2, 2024 14:30:24</span>
+            </div>
+            <div class="test-status status-passed">
+                <div class="type-icon message"></div>
+                Passed
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">12</div>
+                    <div class="metric-label">Total Messages</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">4</div>
+                    <div class="metric-label">Tool Calls</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">98.2%</div>
+                    <div class="metric-label">Success Rate</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">245ms</div>
+                    <div class="metric-label">Avg Response</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">3</div>
+                    <div class="metric-label">Agent Handoffs</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Participating Agents</h3>
+                    <div class="agent-list">
+                        <div class="agent-item">
+                            <div class="agent-avatar customer">CS</div>
+                            <div class="agent-info">
+                                <div class="agent-name">CustomerServiceAgent</div>
+                                <div class="agent-role">Primary Interface</div>
+                                <div class="agent-stats">
+                                    <span>6 msgs</span>
+                                    <span>2 tools</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="agent-item">
+                            <div class="agent-avatar inventory">INV</div>
+                            <div class="agent-info">
+                                <div class="agent-name">InventoryAgent</div>
+                                <div class="agent-role">Stock Management</div>
+                                <div class="agent-stats">
+                                    <span>3 msgs</span>
+                                    <span>1 tool</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="agent-item">
+                            <div class="agent-avatar pricing">PRC</div>
+                            <div class="agent-info">
+                                <div class="agent-name">PricingAgent</div>
+                                <div class="agent-role">Price Analysis</div>
+                                <div class="agent-stats">
+                                    <span>2 msgs</span>
+                                    <span>1 tool</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="agent-item">
+                            <div class="agent-avatar analytics">ANA</div>
+                            <div class="agent-info">
+                                <div class="agent-name">AnalyticsAgent</div>
+                                <div class="agent-role">Data Insights</div>
+                                <div class="agent-stats">
+                                    <span>1 msg</span>
+                                    <span>0 tools</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Tools Used</h3>
+                    <div class="tool-list">
+                        <div class="tool-item">
+                            <span class="tool-name">check_inventory</span>
+                            <span class="tool-count">2</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-name">get_price_history</span>
+                            <span class="tool-count">1</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-name">send_email</span>
+                            <span class="tool-count">1</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-name">log_interaction</span>
+                            <span class="tool-count">3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="timeline-container">
+                <div class="timeline-header">
+                    <h2 class="timeline-title">Interaction Timeline</h2>
+                    <div class="timeline-controls">
+                        <div class="timeline-filter active">All</div>
+                        <div class="timeline-filter">Messages</div>
+                        <div class="timeline-filter">Tools</div>
+                        <div class="timeline-filter">Errors</div>
+                    </div>
+                </div>
+                
+                <div class="timeline">
+                    <div class="timeline-item message">
+                        <div class="interaction-card">
+                            <div class="interaction-header">
+                                <div class="interaction-type">
+                                    <div class="type-icon message"></div>
+                                    User Message
+                                </div>
+                                <div class="interaction-time">14:30:22.123</div>
+                            </div>
+                            <div class="interaction-participants">
+                                <span class="participant">User</span>
+                                <span>→</span>
+                                <span class="participant">CustomerServiceAgent</span>
+                            </div>
+                            <div class="interaction-content">
+                                "Hi, I'm looking for the iPhone 15 Pro. Is it in stock and what's the current price?"
+                            </div>
+                            <div class="performance-metrics">
+                                <div class="performance-item">
+                                    <div class="performance-value">0ms</div>
+                                    <div class="performance-label">Latency</div>
+                                </div>
+                                <div class="performance-item">
+                                    <div class="performance-value">156</div>
+                                    <div class="performance-label">Tokens</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item tool">
+                        <div class="interaction-card">
+                            <div class="interaction-header">
+                                <div class="interaction-type">
+                                    <div class="type-icon tool"></div>
+                                    Tool Call
+                                </div>
+                                <div class="interaction-time">14:30:22.234</div>
+                            </div>
+                            <div class="interaction-participants">
+                                <span class="participant">CustomerServiceAgent</span>
+                            </div>
+                            <div class="tool-usage">
+                                <div class="tool-usage-header">
+                                    🔧 check_inventory
+                                </div>
+                                <div class="tool-usage-content">
+{
+  "product": "iPhone 15 Pro",
+  "sku": "IPHONE15PRO128",
+  "check_all_variants": true
+}
+                                </div>
+                            </div>
+                            <div class="performance-metrics">
+                                <div class="performance-item">
+                                    <div class="performance-value">89ms</div>
+                                    <div class="performance-label">Execution</div>
+                                </div>
+                                <div class="performance-item">
+                                    <div class="performance-value">Success</div>
+                                    <div class="performance-label">Status</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item message">
+                        <div class="interaction-card">
+                            <div class="interaction-header">
+                                <div class="interaction-type">
+                                    <div class="type-icon message"></div>
+                                    Agent Handoff
+                                </div>
+                                <div class="interaction-time">14:30:22.456</div>
+                            </div>
+                            <div class="interaction-participants">
+                                <span class="participant">CustomerServiceAgent</span>
+                                <span>→</span>
+                                <span class="participant">InventoryAgent</span>
+                            </div>
+                            <div class="interaction-content">
+                                "Need to check current stock levels and availability for iPhone 15 Pro variants for customer inquiry."
+                            </div>
+                            <div class="performance-metrics">
+                                <div class="performance-item">
+                                    <div class="performance-value">12ms</div>
+                                    <div class="performance-label">Handoff Time</div>
+                                </div>
+                                <div class="performance-item">
+                                    <div class="performance-value">134</div>
+                                    <div class="performance-label">Tokens</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item message">
+                        <div class="interaction-card">
+                            <div class="interaction-header">
+                                <div class="interaction-type">
+                                    <div class="type-icon message"></div>
+                                    Agent Response
+                                </div>
+                                <div class="interaction-time">14:30:22.678</div>
+                            </div>
+                            <div class="interaction-participants">
+                                <span class="participant">InventoryAgent</span>
+                                <span>→</span>
+                                <span class="participant">PricingAgent</span>
+                            </div>
+                            <div class="interaction-content">
+                                "Stock confirmed: iPhone 15 Pro 128GB (12 units), 256GB (8 units), 512GB (3 units). Need current pricing and any active promotions."
+                            </div>
+                            <div class="performance-metrics">
+                                <div class="performance-item">
+                                    <div class="performance-value">234ms</div>
+                                    <div class="performance-label">Response Time</div>
+                                </div>
+                                <div class="performance-item">
+                                    <div class="performance-value">187</div>
+                                    <div class="performance-label">Tokens</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item tool">
+                        <div class="interaction-card">
+                            <div class="interaction-header">
+                                <div class="interaction-type">
+                                    <div class="type-icon tool"></div>
+                                    Tool Call
+                                </div>
+                                <div class="interaction-time">14:30:22.789</div>
+                            </div>
+                            <div class="interaction-participants">
+                                <span class="participant">PricingAgent</span>
+                            </div>
+                            <div class="tool-usage">
+                                <div class="tool-usage-header">
+                                    💰 get_price_history
+                                </div>
+                                <div class="tool-usage-content">
+{
+  "product": "iPhone 15 Pro",
+  "variants": ["128GB", "256GB", "512GB"],
+  "include_promotions": true,
+  "region": "US"
+}
+                                </div>
+                            </div>
+                            <div class="performance-metrics">
+                                <div class="performance-item">
+                                    <div class="performance-value">156ms</div>
+                                    <div class="performance-label">Execution</div>
+                                </div>
+                                <div class="performance-item">
+                                    <div class="performance-value">Success</div>
+                                    <div class="performance-label">Status</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item message">
+                        <div class="interaction-card">
+                            <div class="interaction-header">
+                                <div class="interaction-type">
+                                    <div class="type-icon message"></div>
+                                    Final Response
+                                </div>
+                                <div class="interaction-time">14:30:23.901</div>
+                            </div>
+                            <div class="interaction-participants">
+                                <span class="participant">CustomerServiceAgent</span>
+                                <span>→</span>
+                                <span class="participant">User</span>
+                            </div>
+                            <div class="interaction-content expandable" onclick="toggleExpand(this)">
+                                <div class="expand-icon" style="display: inline-block; margin-right: 8px;">▶</div>
+                                "Great news! The iPhone 15 Pro is in stock in all storage variants..."
+                                <div class="collapsible-content">
+<br><br>Complete response: "Great news! The iPhone 15 Pro is in stock in all storage variants:
+
+• 128GB - $999 (12 units available) 
+• 256GB - $1099 (8 units available)
+• 512GB - $1299 (3 units available)
+
+We currently have a trade-in promotion where you can get up to $800 off with an eligible device. Would you like me to help you check your trade-in value or proceed with placing an order?"
+                                </div>
+                            </div>
+                            <div class="performance-metrics">
+                                <div class="performance-item">
+                                    <div class="performance-value">445ms</div>
+                                    <div class="performance-label">Total Time</div>
+                                </div>
+                                <div class="performance-item">
+                                    <div class="performance-value">298</div>
+                                    <div class="performance-label">Tokens</div>
+                                </div>
+                                <div class="performance-item">
+                                    <div class="performance-value">✓</div>
+                                    <div class="performance-label">Expected</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleExpand(element) {
+            const content = element.querySelector('.collapsible-content');
+            const icon = element.querySelector('.expand-icon');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                element.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                element.classList.add('expanded');
+            }
+        }
+
+        // Filter functionality
+        document.querySelectorAll('.timeline-filter').forEach(filter => {
+            filter.addEventListener('click', function() {
+                // Remove active class from all filters
+                document.querySelectorAll('.timeline-filter').forEach(f => f.classList.remove('active'));
+                // Add active class to clicked filter
+                this.classList.add('active');
+                
+                // Filter timeline items based on selection
+                const filterType = this.textContent.toLowerCase();
+                document.querySelectorAll('.timeline-item').forEach(item => {
+                    if (filterType === 'all') {
+                        item.style.display = 'block';
+                    } else if (filterType === 'messages' && item.classList.contains('message')) {
+                        item.style.display = 'block';
+                    } else if (filterType === 'tools' && item.classList.contains('tool')) {
+                        item.style.display = 'block';
+                    } else if (filterType === 'errors' && item.classList.contains('error')) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // Add hover effects for agent items
+        document.querySelectorAll('.agent-item').forEach(agent => {
+            agent.addEventListener('click', function() {
+                const agentName = this.querySelector('.agent-name').textContent;
+                // Highlight interactions involving this agent
+                document.querySelectorAll('.participant').forEach(participant => {
+                    if (participant.textContent === agentName) {
+                        participant.parentElement.parentElement.style.border = '2px solid #64b5f6';
+                        setTimeout(() => {
+                            participant.parentElement.parentElement.style.border = '1px solid #2a2d47';
+                        }, 2000);
+                    }
+                });
+            });
+        });
+
+        // Add tool usage highlighting
+        document.querySelectorAll('.tool-item').forEach(tool => {
+            tool.addEventListener('click', function() {
+                const toolName = this.querySelector('.tool-name').textContent;
+                // Highlight tool usage in timeline
+                document.querySelectorAll('.tool-usage-header').forEach(header => {
+                    if (header.textContent.includes(toolName)) {
+                        header.parentElement.parentElement.style.backgroundColor = 'rgba(245, 158, 11, 0.2)';
+                        setTimeout(() => {
+                            header.parentElement.parentElement.style.backgroundColor = 'rgba(15, 15, 35, 0.6)';
+                        }, 2000);
+                    }
+                });
+            });
+        });
+
+        // Add real-time updates simulation
+        function simulateRealTimeUpdates() {
+            // This would connect to your actual test framework
+            // For demo purposes, we'll just update the timestamp
+            const timeElements = document.querySelectorAll('.interaction-time');
+            timeElements.forEach((element, index) => {
+                if (Math.random() > 0.95) { // Occasionally update
+                    element.style.color = '#64b5f6';
+                    setTimeout(() => {
+                        element.style.color = '#9ca3af';
+                    }, 1000);
+                }
+            });
+        }
+
+        // Simulate updates every 5 seconds
+        setInterval(simulateRealTimeUpdates, 5000);
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '1') document.querySelector('.timeline-filter').click();
+            if (e.key === '2') document.querySelectorAll('.timeline-filter')[1].click();
+            if (e.key === '3') document.querySelectorAll('.timeline-filter')[2].click();
+            if (e.key === '4') document.querySelectorAll('.timeline-filter')[3].click();
+        });
+
+        // Add smooth scrolling for timeline navigation
+        function scrollToTimelineItem(index) {
+            const items = document.querySelectorAll('.timeline-item');
+            if (items[index]) {
+                items[index].scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+                items[index].style.backgroundColor = 'rgba(100, 181, 246, 0.1)';
+                setTimeout(() => {
+                    items[index].style.backgroundColor = 'transparent';
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>

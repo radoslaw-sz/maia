@@ -2,5 +2,5 @@ providers:
   ollama:
     class: OllamaProvider
     config:
-      model: ${OLLAMA_MODEL}
-      host: ${OLLAMA_HOST}
+      model: mistral
+      host: http://localhost:11434

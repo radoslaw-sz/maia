@@ -2,8 +2,7 @@ import pytest
 from functools import partial
 from maia_test_framework.testing.base import MaiaTest
 from maia_test_framework.testing.assertions.content_patterns import assert_professional_tone, assert_no_hallucination_markers, assert_contains_pattern
-from maia_test_framework.providers.ollama import OllamaProvider
-from maia_test_framework.core.agent import Agent
+from maia_test_framework.core.exceptions import MaiaAssertionError
 
 class TestContentAssertions(MaiaTest):
     def setup_agents(self):
@@ -23,7 +22,7 @@ class TestContentAssertions(MaiaTest):
     async def test_professional_tone_assertion(self):
         session = self.extend_session("common_session", agent_names=["Alice"])
         await session.user_says("Tell me the weather and end your response with the word 'lol'.")
-        with pytest.raises(AssertionError, match=r"Unprofessional language detected: .*"):
+        with pytest.raises(MaiaAssertionError, match=r"Unprofessional language detected: .*"):
             await session.agent_responds("Alice")
 
     @pytest.mark.asyncio

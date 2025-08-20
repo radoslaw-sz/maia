@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* Custom CSS from example.html */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #64b5f6, #42a5f5, #1e88e5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gradient-bg {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.timeline-line::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #64b5f6, #42a5f5, #1e88e5);
+}
+
+.timeline-dot::before {
+    content: '';
+    position: absolute;
+    left: -29px;
+    top: 8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #64b5f6;
+    border: 3px solid #0f0f23;
+    z-index: 2;
+}
+
+.timeline-dot.tool::before { background: #f59e0b; }
+.timeline-dot.error::before { background: #ef4444; }
+
+.agent-avatar-customer { background: linear-gradient(135deg, #667eea, #764ba2); }
+.agent-avatar-inventory { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.agent-avatar-pricing { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.agent-avatar-analytics { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.collapsible-content.expanded {
+    max-height: 500px;
+}
+
+.expand-icon {
+    transition: transform 0.2s ease;
+}
+
+.expanded .expand-icon {
+    transform: rotate(90deg);
+}
