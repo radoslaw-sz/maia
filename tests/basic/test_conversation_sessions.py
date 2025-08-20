@@ -1,9 +1,9 @@
 import pytest
-from maia_test_framework.providers.generic_lite_llm import GenericLiteLLMProvider
-from maia_test_framework.providers.ollama import OllamaProvider
-from maia_test_framework.testing.assertions.agents_participation import assert_agent_participated
-from maia_test_framework.testing.base import MaiaTest
-from maia_test_framework.testing.validators.conversation import ConversationValidator
+from framework.providers.generic_lite_llm import GenericLiteLLMProvider
+from framework.providers.ollama import OllamaProvider
+from framework.testing.assertions.agents_participation import assert_agent_participated
+from framework.testing.base import MaiaTest
+from framework.testing.validators.conversation import ConversationValidator
 
 class TestConversationSessions(MaiaTest):
     def setup_agents(self):

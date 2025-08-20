@@ -56,7 +56,7 @@ class Session:
 
     async def user_says_and_broadcast(self, message: str) -> Tuple[Optional[AgentResponse], Optional[str]]:
         """Broadcast a user message to all agents and get the first response."""
-        msg = Message(content=message, sender="user")
+        msg = Message(content=message, sender="user", sender_type="user")
         self.bus.add_message(msg)
         history = self.bus.get_history()
 

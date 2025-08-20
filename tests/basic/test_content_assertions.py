@@ -1,8 +1,8 @@
 import pytest
 from functools import partial
-from maia_test_framework.testing.base import MaiaTest
-from maia_test_framework.testing.assertions.content_patterns import assert_professional_tone, assert_no_hallucination_markers, assert_contains_pattern
-from maia_test_framework.core.exceptions import MaiaAssertionError
+from framework.testing.base import MaiaTest
+from framework.testing.assertions.content_patterns import assert_professional_tone, assert_no_hallucination_markers, assert_contains_pattern
+from framework.core.exceptions import MaiaAssertionError
 
 class TestContentAssertions(MaiaTest):
     def setup_agents(self):

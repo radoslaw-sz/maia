@@ -53,7 +53,7 @@ Issues = "https://github.com/radoslaw-sz/maia/issues"
 [project.scripts]
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = [".."]
 include = ["framework*"]
 
 [tool.black]
@@ -71,7 +71,8 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["../tests"]
+pythonpath = [".."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
