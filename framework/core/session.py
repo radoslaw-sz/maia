@@ -25,15 +25,13 @@ class Session:
     
     async def agent_responds(self, agent_name: str) -> Optional[AgentResponse]:
         """Have a specified agent respond to the conversation."""
+
         agent = self.bus.get_agent(agent_name)
+
         history = self.bus.get_history()
 
-        print(f'history: ', history)
-        
         response = await agent.generate_response(history)
 
-        print(f'response: ', response)
-        
         if response.content.strip() == IGNORE_MESSAGE:
             return None
 
@@ -76,7 +74,7 @@ class Session:
 
     async def agent_says(self, from_agent: str, to_agent: str, message: str) -> "Session":
         """Send a message from one agent to another."""
-        msg = Message(content=message, sender=from_agent, sender_type="agent", metadata={"to_agent": to_agent})
+        msg = Message(content=message, sender=from_agent, sender_type="agent", receiver=to_agent, receiver_type="agent")
         self.bus.add_message(msg)
         return self
 
@@ -105,7 +103,6 @@ class Session:
             response_to_initiator = await self.agent_responds(responder)
             if response_to_initiator:
                 msg = Message(content=response_to_initiator.content, sender=responder, sender_type="agent", metadata={"to_agent": initiator})
-                self.bus.add_message(msg)
                 conversation_log.append(msg)
             else:
                 break
@@ -114,7 +111,6 @@ class Session:
             response_to_responder = await self.agent_responds(initiator)
             if response_to_responder:
                 msg = Message(content=response_to_responder.content, sender=initiator, sender_type="agent", metadata={"to_agent": responder})
-                self.bus.add_message(msg)
                 conversation_log.append(msg)
             else:
                 break

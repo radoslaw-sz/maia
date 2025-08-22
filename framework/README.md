@@ -5,8 +5,6 @@
   Multi-AI Agents Test Framework
 </h2>
 
-![Runs View](docs/runs-view.png)
-
 **Maia Test Framework** is a `pytest`-based framework designed for testing multi-agent AI systems. It offers a flexible and extensible platform to create, run, and analyze complex multi-agent simulations.
 
 ## Key Features
@@ -116,37 +114,6 @@ Run your tests using `pytest`:
 ```bash
 pytest
 ```
-
-## Test Dashboard
-
-The project includes a Next.js-based dashboard to visualize test reports.
-
-### Dashboard Features
-- **Test Run Overview**: See a list of all test runs, including statistics like pass/fail rates and total duration.
-- **Detailed Test View**: Drill down into individual tests to see detailed information, including participants, messages, and assertions.
-- **Interaction Timeline**: Visualize the conversation flow between agents and tools in a timeline view.
-
-### Screenshots
-
-**Runs View:**
-![Runs View](docs/runs-view.png)
-
-**Test View:**
-![Test View 1](docs/test-view-1.png)
-![Test View 2](docs/test-view-2.png)
-
-### How to Use
-
-1.  **Generate Test Reports**: Run your `pytest` tests as usual. The framework will automatically generate JSON report files in the `test_reports/` directory.
-
-2.  **Run the Dashboard**:
-    ```bash
-    cd dashboard
-    yarn install
-    yarn dev
-    ```
-
-3.  **View the Reports**: Open your browser to `http://localhost:3000` to see the dashboard. It will automatically read the generated JSON files from the `test_reports` directory. You can configure a different directory by setting the `TEST_REPORTS_DIR` environment variable before running the dashboard.
 
 ## Contributing
 

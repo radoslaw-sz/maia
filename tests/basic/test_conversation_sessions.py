@@ -1,6 +1,7 @@
 import pytest
 from framework.providers.generic_lite_llm import GenericLiteLLMProvider
 from framework.providers.ollama import OllamaProvider
+from framework.testing.assertions.content_patterns import assert_professional_tone
 from framework.testing.assertions.agents_participation import assert_agent_participated
 from framework.testing.base import MaiaTest
 from framework.testing.validators.conversation import ConversationValidator
@@ -49,29 +50,31 @@ class TestConversationSessions(MaiaTest):
 
     @pytest.mark.asyncio
     async def test_conversation_direct_message(self):
-        # In this test, we configure agents without the ignore prompt 
-        # and send messages directly to them.
         self.create_agent(
             name="Alice",
-            provider=self.get_provider("ollama"),
+            provider=GenericLiteLLMProvider(config={
+                "model": "ollama/mistral",
+                "api_base": "http://localhost:11434"
+            }),
             system_message="You are a weather assistant."
         )
         self.create_agent(
             name="Bob",
-            provider=self.get_provider("ollama"),
-            system_message="You are a helpful assistant who is also a pirate."
+            provider=OllamaProvider(config={
+                "model": "mistral"
+            }),
+            system_message="You are a assistant who only suggests clothing."
         )
 
-        session = self.create_session(["Alice", "Bob"])
+        session = self.create_session(
+            ["Alice", "Bob"],
+            assertions=[assert_professional_tone],
+        )
 
         await session.user_says("Please describe the usual weather in London in July, including temperature and conditions.")
-        response_a = await session.agent_responds('Alice')
-        print(f"Alice: {response_a.content}")
+        await session.agent_responds('Alice')
         assert_agent_participated(session, 'Alice')
-
-        await session.user_says(f"Given the weather: {response_a.content}, what clothes should I wear?")
-        response_b = await session.agent_responds('Bob')
-        print(f"Bob: {response_b.content}")
+        await session.agent_responds('Bob')
         assert_agent_participated(session, 'Bob')
 
     @pytest.mark.asyncio
@@ -98,7 +101,7 @@ class TestConversationSessions(MaiaTest):
         self.create_agent(
             name="Bob",
             provider=self.get_provider("ollama"),
-            system_message="You are a helpful assistant who is also a pirate."
+            system_message="You are a pirate who want to know the different details of the weather."
         )
     
         session = self.create_session(["Alice", "Bob"])
@@ -113,7 +116,7 @@ class TestConversationSessions(MaiaTest):
         assert len(conversation_log) == 7  # 3 turns each + initial message
 
     @pytest.mark.asyncio
-    async def test_multi_turn_agent_conversation_fails_on_etiquette(self):
+    async def test_agent_conversation_fails_on_etiquette(self):
         session = self.create_session(["Alice", "Bob"])
         
         await session.agent_says("Alice", "Bob", "What's the weather?")
