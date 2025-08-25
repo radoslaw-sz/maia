@@ -35,10 +35,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex h-screen">
-      <div className="overflow-y-auto">
-        <RunList onSelectRun={handleSelectRun} />
-      </div>
+    <div className="flex h-screen bg-[#0f0f23]">
+      <RunList onSelectRun={handleSelectRun} />
       <div className="flex-grow overflow-y-auto">
         {selectedRun ? (
           <ReportView runId={selectedRun} />

@@ -197,7 +197,7 @@ const RunList = ({ onSelectRun }: { onSelectRun: (runId: string) => void }) => {
   });
 
   return (
-    <div className="w-[380px] bg-[rgba(26,26,46,0.95)] border-r border-l border-t border-[#2a2d47] backdrop-blur-sm flex flex-col h-screen">
+    <div className="w-[380px] bg-[rgba(26,26,46,0.95)] border-r border-l border-t border-[#2a2d47] backdrop-blur-sm flex flex-col h-full">
       <div className="p-6 border-b border-[#2a2d47] bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-[#64b5f6] to-[#1e88e5] text-transparent bg-clip-text mb-1">Runs</h2>
         <p className="text-sm text-[#9ca3af]">Browse test execution history</p>
@@ -227,54 +227,56 @@ const RunList = ({ onSelectRun }: { onSelectRun: (runId: string) => void }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {Object.entries(groupedRuns).map(([dateGroup, runsInGroup]) => (
-          <div key={dateGroup}>
-            <div 
-              className={`date-separator text-xs font-semibold text-[#64b5f6] uppercase tracking-wider mb-2 sticky top-0 bg-[rgba(26,26,46,0.95)] z-10 py-2 border-b border-[rgba(42,45,71,0.6)] flex justify-between items-center cursor-pointer ${!collapsedGroups[dateGroup] ? 'expanded' : ''}`}
-              onClick={() => toggleGroup(dateGroup)}
-            >
-              <span>{dateGroup}</span>
-              <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={2} stroke='currentColor' className='w-4 h-4 expand-icon transition-transform'>
-                <path strokeLinecap='round' strokeLinejoin='round' d='M8.25 4.5l7.5 7.5-7.5 7.5' />
-              </svg>
-            </div>
-            <div className={`collapsible-content ${!collapsedGroups[dateGroup] ? 'expanded' : ''}`}>
-              <div className="space-y-2 pt-2">
-              {runsInGroup.map(run => (
+      <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
+        <div className="p-6 space-y-4">
+          {sortedGroupKeys.map((dateGroup) => (
+            <div key={dateGroup}>
               <div 
-                key={run.id} 
-                className={`run-item cursor-pointer p-5 rounded-xl transition-all ${selectedRunId === run.id ? 'border-[#64b5f6] bg-[rgba(100,181,246,0.1)] translate-x-1' : 'border-[rgba(42,45,71,0.6)] bg-[rgba(15,15,35,0.4)] hover:border-[rgba(100,181,246,0.5)] hover:bg-[rgba(15,15,35,0.6)] hover:translate-x-1'}`}
-                onClick={() => handleSelectRun(run.id)}
+                className={`date-separator text-xs font-semibold text-[#64b5f6] uppercase tracking-wider mb-2 sticky top-0 bg-[rgba(26,26,46,0.95)] z-10 py-2 border-b border-[rgba(42,45,71,0.6)] flex justify-between items-center cursor-pointer ${!collapsedGroups[dateGroup] ? 'expanded' : ''}`}
+                onClick={() => toggleGroup(dateGroup)}
               >
-                <div className="run-header flex items-start justify-between mb-3">
-                  <div className="run-info flex-1">
-                    <h3 className="run-name text-lg font-semibold text-[#e0e6ed] mb-1">{run.name}</h3>
-                    <p className="run-meta text-xs text-[#9ca3af] flex gap-3">{new Date(run.timestamp).toLocaleTimeString()}</p>
-                  </div>
-                  <span className="run-duration text-sm font-medium text-[#64b5f6]">{run.duration}</span>
-                </div>
-                <div className="run-stats flex items-center gap-2 mb-3">
-                  <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusStyles('passed')}`}>{run.stats.passed} passed</div>
-                  {run.stats.failed > 0 && <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusStyles('failed')}`}>{run.stats.failed} failed</div>}
-                  {run.stats.running > 0 && <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusStyles('running')}`}>{run.stats.running} running</div>}
-                  <div className="text-sm text-[#9ca3af]">/ {run.stats.total} total</div>
-                </div>
-                <div className="run-progress w-full h-1 bg-[rgba(42,45,71,0.6)] rounded-full overflow-hidden">
-                  <div 
-                    className={`progress-bar h-full rounded-full ${run.stats.failed > 0 ? 'bg-gradient-to-r from-[#ef4444] to-[#dc2626]' : run.stats.running > 0 ? 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] animate-pulse' : 'bg-gradient-to-r from-[#22c55e] to-[#16a34a]'}`}
-                    style={{ width: `${(run.stats.passed / run.stats.total) * 100}%` }}
-                  ></div>
-                </div>
+                <span>{dateGroup}</span>
+                <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={2} stroke='currentColor' className='w-4 h-4 expand-icon transition-transform'>
+                  <path strokeLinecap='round' strokeLinejoin='round' d='M8.25 4.5l7.5 7.5-7.5 7.5' />
+                </svg>
               </div>
-            ))}
-            </div>
+              <div className={`${collapsedGroups[dateGroup] ? 'hidden' : ''}`}>
+                <div className="space-y-2 pt-2">
+                {groupedRuns[dateGroup].map(run => (
+                  <div 
+                    key={run.id} 
+                    className={`run-item cursor-pointer p-5 rounded-xl transition-all ${selectedRunId === run.id ? 'border-[#64b5f6] bg-[rgba(100,181,246,0.1)] translate-x-1' : 'border-[rgba(42,45,71,0.6)] bg-[rgba(15,15,35,0.4)] hover:border-[rgba(100,181,246,0.5)] hover:bg-[rgba(15,15,35,0.6)] hover:translate-x-1'}`}
+                    onClick={() => handleSelectRun(run.id)}
+                  >
+                    <div className="run-header flex items-start justify-between mb-3">
+                      <div className="run-info flex-1">
+                        <h3 className="run-name text-lg font-semibold text-[#e0e6ed] mb-1">{run.name}</h3>
+                        <p className="run-meta text-xs text-[#9ca3af] flex gap-3">{new Date(run.timestamp).toLocaleTimeString()}</p>
+                      </div>
+                      <span className="run-duration text-sm font-medium text-[#64b5f6]">{run.duration}</span>
+                    </div>
+                    <div className="run-stats flex items-center gap-2 mb-3">
+                      <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusStyles('passed')}`}>{run.stats.passed} passed</div>
+                      {run.stats.failed > 0 && <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusStyles('failed')}`}>{run.stats.failed} failed</div>}
+                      {run.stats.running > 0 && <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusStyles('running')}`}>{run.stats.running} running</div>}
+                      <div className="text-sm text-[#9ca3af]">/ {run.stats.total} total</div>
+                    </div>
+                    <div className="run-progress w-full h-1 bg-[rgba(42,45,71,0.6)] rounded-full overflow-hidden">
+                      <div 
+                        className={`progress-bar h-full rounded-full ${run.stats.failed > 0 ? 'bg-gradient-to-r from-[#ef4444] to-[#dc2626]' : run.stats.running > 0 ? 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] animate-pulse' : 'bg-gradient-to-r from-[#22c55e] to-[#16a34a]'}`}
+                        style={{ width: `${(run.stats.passed / run.stats.total) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ))}
+        </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default RunList;
