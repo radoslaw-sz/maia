@@ -28,7 +28,6 @@ class AssertionResult:
     id: str
     description: str
     status: Literal["passed", "failed"]
-    details: str = ""
 
 @dataclass
 class ValidatorResult:
@@ -106,23 +105,35 @@ class MaiaTest(ABC, ProviderMixin):
                         details={"error": str(e), "traceback": traceback.format_exc()}
                     ))
 
-        # Collect Participants
-        participants = []
-        participants.append(Participant(id="user", name="User", type="user"))
-        for name, agent in self.agents.items():
-            participants.append(Participant(id=name, name=name, type="agent", metadata={"model": agent.provider.__class__.__name__}))
-        for name, tool in self.tools.items():
-            participants.append(Participant(id=name, name=name, type="tool"))
-        
-        # Collect Session Data
+        # Collect Participants and Session Data from message history
+        all_participants = {}
         session_data = []
         for s in self.sessions:
-            history = [msg._to_dict() for msg in s.message_history]
+            history = [msg.to_dict() for msg in s.message_history]
+            session_participant_ids = set()
+
+            for msg in s.message_history:
+                session_participant_ids.add(msg.sender)
+                if msg.receiver:
+                    session_participant_ids.add(msg.receiver)
+
+            for participant_id in session_participant_ids:
+                if participant_id not in all_participants:
+                    if participant_id == "user":
+                        all_participants[participant_id] = Participant(id="user", name="User", type="user")
+                    elif participant_id in self.agents:
+                        agent = self.agents[participant_id]
+                        all_participants[participant_id] = Participant(id=participant_id, name=participant_id, type="agent", metadata={"model": agent.provider.__class__.__name__})
+                    elif participant_id in self.tools:
+                        all_participants[participant_id] = Participant(id=participant_id, name=participant_id, type="tool")
+
             session_data.append({
                 "id": s.id,
-                "participants": [p.id for p in participants],
+                "participants": list(session_participant_ids),
                 "messages": history,
             })
+        
+        participants = list(all_participants.values())
         
         result = TestResult(
             test_name=self.test_name,
@@ -138,22 +149,29 @@ class MaiaTest(ABC, ProviderMixin):
 
         self.sessions.clear()
 
-    def run_assertion(self, assertion_callable: Callable, description: str):
+    def run_assertion(self, assertion_callable: Callable, description: str = None):
         assertion_id = f"assert_{len(self.assertion_results) + 1}"
         try:
-            assertion_callable()
+            if description is None:
+                description = assertion_callable()
             self.assertion_results.append(AssertionResult(
                 id=assertion_id,
                 description=description,
                 status="passed"
             ))
         except AssertionError as e:
-            result = AssertionResult(
-                id=assertion_id,
-                description=description,
-                status="failed",
-                details=str(e)
-            )
+            if description is None:
+                result = AssertionResult(
+                    id=assertion_id,
+                    description=str(e),
+                    status="failed",
+                )
+            else:
+                result = AssertionResult(
+                    id=assertion_id,
+                    description=description,
+                    status="failed",
+                )
             self.assertion_results.append(result)
             raise MaiaAssertionError(str(e), result=result)
 

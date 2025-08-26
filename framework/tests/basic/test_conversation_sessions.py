@@ -12,7 +12,7 @@ class TestConversationSessions(MaiaTest):
             name="Alice",
             provider=self.get_provider("ollama"),
             system_message="You are a weather assistant. Only describe the weather.",
-            ignore_trigger_prompt="You MUST NOT answer questions about any other topic, including what to wear. If the user asks about anything other than the weather, you MUST respond with only the exact text: IGNORE_MESSAGE",
+            ignore_trigger_prompt="You MUST NOT answer questions about any other topic, including what to wear. If the user asks about anything other than the weather, you MUST respond with ONLY the exact text: IGNORE_MESSAGE. No explanation, no additional words, just the: IGNORE_MESSAGE",
         )
 
         self.create_agent(
@@ -22,7 +22,7 @@ class TestConversationSessions(MaiaTest):
                 "api_base": "http://localhost:11434"
             }),
             system_message="You are a pirate assistant who only suggests clothing.",
-            ignore_trigger_prompt="If the question is not about what to wear, you MUST respond with only the exact text: IGNORE_MESSAGE"
+            ignore_trigger_prompt="If the question is not about what to wear, you MUST respond with only the exact text: IGNORE_MESSAGE. No explanation, no additional words, just the: IGNORE_MESSAGE",
         )
 
     @pytest.mark.asyncio
@@ -73,9 +73,9 @@ class TestConversationSessions(MaiaTest):
 
         await session.user_says("Please describe the usual weather in London in July, including temperature and conditions.")
         await session.agent_responds('Alice')
-        assert_agent_participated(session, 'Alice')
+        self.run_assertion(lambda: assert_agent_participated(session, 'Alice'))
         await session.agent_responds('Bob')
-        assert_agent_participated(session, 'Bob')
+        self.run_assertion(lambda: assert_agent_participated(session, 'Bob'))
 
     @pytest.mark.asyncio
     async def test_agent_to_agent_conversation(self):

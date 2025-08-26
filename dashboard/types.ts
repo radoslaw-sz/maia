@@ -28,6 +28,5 @@ export interface TestReport {
     id: string;
     description: string;
     status: string;
-    details: string;
   }[];
 }
