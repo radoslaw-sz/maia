@@ -73,9 +73,9 @@ class TestConversationSessions(MaiaTest):
 
         await session.user_says("Please describe the usual weather in London in July, including temperature and conditions.")
         await session.agent_responds('Alice')
-        self.run_assertion(lambda: assert_agent_participated(session, 'Alice'))
+        self.run_assertion(assert_agent_participated(session, 'Alice'))
         await session.agent_responds('Bob')
-        self.run_assertion(lambda: assert_agent_participated(session, 'Bob'))
+        self.run_assertion(assert_agent_participated(session, 'Bob'))
 
     @pytest.mark.asyncio
     async def test_agent_to_agent_conversation(self):

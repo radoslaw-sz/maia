@@ -436,19 +436,31 @@ const TestView = ({ runId, testId }: { runId: string, testId: string }) => {
                 </div>
                 
                 {report.assertions.length > 0 ? (
-                  report.assertions.map(assertion => (
-                    <div key={assertion.id} className={`assertion-item bg-[rgba(15,15,35,0.6)] border border-[#2a2d47] rounded-xl p-5 mb-3 transition-all ${assertion.status === 'passed' ? 'border-l-4 border-[#22c55e]' : 'border-l-4 border-[#ef4444]'}`}>
-                      <div className="assertion-header flex items-start justify-between mb-3">
-                        <div>
-                          <div className="assertion-name text-lg font-semibold text-[#e0e6ed] mb-1">{assertion.description}</div>
-                        </div>
-                        <div className={`assertion-status flex items-center gap-2 px-3 py-1 rounded-2xl text-xs font-semibold uppercase ${assertion.status === 'passed' ? 'bg-[rgba(34,197,94,0.1)] text-[#22c55e]' : 'bg-[rgba(239,68,68,0.1)] text-[#ef4444]'}`}>
-                          <div className={`status-icon w-2 h-2 rounded-full ${assertion.status === 'passed' ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`}></div>
-                          {assertion.status}
+                  report.assertions.map(assertion => {
+                    return (
+                      <div key={assertion.id} className={`assertion-item bg-[rgba(15,15,35,0.6)] border border-[#2a2d47] rounded-xl p-5 mb-3 transition-all ${assertion.status === 'passed' ? 'border-l-4 border-[#22c55e]' : 'border-l-4 border-[#ef4444]'}`}>
+                        <div className="assertion-header flex items-start justify-between">
+                          <div className="flex-grow pr-4">
+                            <div className="assertion-name text-base font-semibold text-[#e0e6ed]">{assertion.assertion_name}</div>
+                            {assertion.description && (
+                              <div className="assertion-description text-sm text-[#9ca3af] mt-1">
+                                {assertion.description}
+                              </div>
+                            )}
+                            {assertion.metadata?.message?.content && (
+                              <div className="assertion-description text-sm text-[#9ca3af] mt-1">
+                                {assertion.metadata.message.content}
+                              </div>
+                            )}
+                          </div>
+                          <div className={`assertion-status flex-shrink-0 flex items-center gap-2 px-3 py-1 rounded-2xl text-xs font-semibold uppercase ${assertion.status === 'passed' ? 'bg-[rgba(34,197,94,0.1)] text-[#22c55e]' : 'bg-[rgba(239,68,68,0.1)] text-[#ef4444]'}`}>
+                            <div className={`status-icon w-2 h-2 rounded-full ${assertion.status === 'passed' ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`}></div>
+                            {assertion.status}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-center text-[#9ca3af] py-10">No assertions found for this test.</div>
                 )}

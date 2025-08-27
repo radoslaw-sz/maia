@@ -14,6 +14,7 @@ from maia_test_framework.core.communication_bus import CommunicationBus
 from maia_test_framework.core.tools.base import BaseTool
 from maia_test_framework.testing.mixin.provider_mixin import ProviderMixin
 from maia_test_framework.testing.validators.base import BaseValidator
+from maia_test_framework.testing.assertions.base import MaiaAssertion
 from maia_test_framework.core.exceptions import MaiaAssertionError
 
 @dataclass
@@ -26,8 +27,10 @@ class Participant:
 @dataclass
 class AssertionResult:
     id: str
-    description: str
+    assertion_name: str
+    description: str | None
     status: Literal["passed", "failed"]
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ValidatorResult:
@@ -149,31 +152,42 @@ class MaiaTest(ABC, ProviderMixin):
 
         self.sessions.clear()
 
-    def run_assertion(self, assertion_callable: Callable, description: str = None):
+    def _execute_and_record_assertion(self, assertion: MaiaAssertion, assertion_name: str, metadata: Dict[str, Any]):
         assertion_id = f"assert_{len(self.assertion_results) + 1}"
         try:
-            if description is None:
-                description = assertion_callable()
+            final_description = None
+            result_message = assertion.call()
+            if result_message and isinstance(result_message, str):
+                final_description = f"{result_message}"
+
             self.assertion_results.append(AssertionResult(
                 id=assertion_id,
-                description=description,
-                status="passed"
+                assertion_name=assertion_name,
+                description=final_description,
+                status="passed",
+                metadata=metadata
             ))
         except AssertionError as e:
-            if description is None:
-                result = AssertionResult(
-                    id=assertion_id,
-                    description=str(e),
-                    status="failed",
-                )
-            else:
-                result = AssertionResult(
-                    id=assertion_id,
-                    description=description,
-                    status="failed",
-                )
+            result = AssertionResult(
+                id=assertion_id,
+                assertion_name=assertion_name,
+                description=str(e),
+                status="failed",
+                metadata=metadata
+            )
             self.assertion_results.append(result)
-            raise MaiaAssertionError(str(e), result=result)
+            raise MaiaAssertionError(str(e), result=result) from e
+
+    def run_assertion(self, assertion: MaiaAssertion):
+        """Runs a test-level assertion that is not bound to a specific message."""
+        assertion_name = assertion.get_name() or "Unnamed Assertion"
+        self._execute_and_record_assertion(assertion, assertion_name, metadata={})
+
+    def _run_message_assertion(self, assertion: MaiaAssertion, message: Message):
+        """Runs a session-level assertion against a specific message."""
+        assertion_name = assertion.get_name() or "Unnamed Assertion"
+        metadata = {"message": message.to_dict()}
+        self._execute_and_record_assertion(assertion, assertion_name, metadata)
 
     def setup_agents(self):
         """Override this method to define agents for test suite"""
@@ -204,15 +218,10 @@ class MaiaTest(ABC, ProviderMixin):
             raise ValueError(f"Tool with name '{name}' not found.")
         return self.tools[name]
 
-    def _create_assertion_wrapper(self, original_assertion):
+    def _create_assertion_wrapper(self, original_assertion_factory):
         def wrapper(response_msg):
-            func = original_assertion
-            description = ""
-            if isinstance(func, functools.partial):
-                description = func.func.__name__
-            else:
-                description = func.__name__
-            self.run_assertion(lambda: original_assertion(response_msg), description=description)
+            assertion_object = original_assertion_factory(response_msg)
+            self._run_message_assertion(assertion_object, message=response_msg)
         return wrapper
 
     def create_session(self, agent_names: List[str] = None, assertions: List[Callable[[Message], None]] = None, session_id: str = None) -> Session:

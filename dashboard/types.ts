@@ -26,7 +26,9 @@ export interface TestReport {
   }[];
   assertions: {
     id: string;
-    description: string;
+    assertion_name: string;
+    description?: string;
     status: string;
+    metadata: any
   }[];
 }
