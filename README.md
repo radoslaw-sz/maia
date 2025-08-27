@@ -33,17 +33,25 @@ Create a test class that inherits from `MaiaTest` and define your agents in the 
 
 ```python
 from maia_test_framework.testing.base import MaiaTest
-from maia_test_framework.providers.ollama import OllamaProvider
-from maia_test_framework.core.agent import Agent
+from maia_test_framework.providers.generic_lite_llm import GenericLiteLLMProvider
 
 class TestMyAgent(MaiaTest):
     def setup_agents(self):
-        self.agents["coder"] = Agent(
+        # Using a pre-configured provider
+        self.create_agent(
             name="coder",
-            provider=OllamaProvider(config={
-                "model": "mistral",
-                "system_message": "You are a helpful coding assistant.",
-            })
+            provider=self.get_provider("ollama"),
+            system_message="You are a helpful coding assistant."
+        )
+
+        # Using a provider defined on the fly
+        self.create_agent(
+            name="reviewer",
+            provider=GenericLiteLLMProvider(config={
+                "model": "ollama/mistral",
+                "api_base": "http://localhost:11434"
+            }),
+            system_message="You are a helpful code reviewer."
         )
 ```
 
@@ -56,7 +64,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_code_generation(self):
-    session = self.create_session(["coder"])
+    session = self.create_session(["coder", "reviewer"])
     # ...
 ```
 
