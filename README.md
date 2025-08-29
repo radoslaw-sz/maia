@@ -22,9 +22,9 @@ Maia supports a variety of AI frameworks and libraries which opens possibility t
 
 | Integration | Provider |
 | :--- | :--- |
-| **LiteLLM** | [`LiteLLMBaseProvider`](framework/src/maia_test_framework/providers/litellm_base.py) |
-| **LangChain** | [`LangChainProvider`](framework/src/maia_test_framework/providers/langchain.py) |
-| **CrewAI** | [`CrewAIProvider`](framework/src/maia_test_framework/providers/crewai.py) |
+| [**LiteLLM**](https://github.com/BerriAI/litellm) | [`LiteLLMBaseProvider`](framework/src/maia_test_framework/providers/litellm_base.py) |
+| [**LangChain**](https://github.com/langchain-ai/langchain) | [`LangChainProvider`](framework/src/maia_test_framework/providers/langchain.py) |
+| [**CrewAI**](https://github.com/crewAIInc/crewAI) | [`CrewAIProvider`](framework/src/maia_test_framework/providers/crewai.py) |
 
 It's easy to create your own provider by extending `BaseProvider`.
 
