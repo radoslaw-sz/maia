@@ -38,7 +38,7 @@ Here are the available tools:
     async def generate_response(self, history: List[Message]) -> AgentResponse:
         system_message = self.system_message + self._format_tools_prompt()
         
-        response = await self.provider.generate(
+        response = await self.provider.base_generate(
             history=history,
             system_message=system_message,
             ignore_trigger_prompt=self.ignore_trigger_prompt
@@ -60,7 +60,7 @@ Here are the available tools:
                     history.append(Message(sender=tool_call["name"], sender_type="tool", content=json.dumps({"tool_output": tool_result})))
 
                     # Second call to LLM with tool result
-                    return await self.provider.generate(
+                    return await self.provider.base_generate(
                         history=history,
                         system_message=system_message,
                         ignore_trigger_prompt=self.ignore_trigger_prompt

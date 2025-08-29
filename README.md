@@ -12,10 +12,21 @@
 ## Key Features
 
 - **Multi-Agent Simulation**: Simulate conversations and interactions between multiple AI agents.
-- **Extensible Provider Model**: Easily integrate with various AI model providers (e.g., Ollama, LiteLLM).
+- **Extensible Provider Model**: Easily integrate with various AI model providers
 - **Built-in Assertions**: A suite of assertions to verify agent behavior, including content analysis and participation checks.
 - **Tool Integration**: Agents can use external tools to perform actions.
-- **Async Support**: Built with `asyncio` for efficient I/O operations.
+
+## Integrations
+
+Maia supports a variety of AI frameworks and libraries which opens possibility to use any model you want. Here are some of the built-in integrations:
+
+| Integration | Provider |
+| :--- | :--- |
+| **LiteLLM** | [`LiteLLMBaseProvider`](framework/src/maia_test_framework/providers/litellm_base.py) |
+| **LangChain** | [`LangChainProvider`](framework/src/maia_test_framework/providers/langchain.py) |
+| **CrewAI** | [`CrewAIProvider`](framework/src/maia_test_framework/providers/crewai.py) |
+
+It's easy to create your own provider by extending `BaseProvider`.
 
 ## Installation
 

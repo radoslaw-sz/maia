@@ -14,7 +14,7 @@ class MockProvider(BaseProvider):
     def get_provider_name(self) -> str:
         return "Mock"
 
-    async def generate(self, history: list, system_message: str = "", ignore_trigger_prompt: str = "") -> AgentResponse:
+    async def generate(self, history: list, system_message: str = "") -> AgentResponse:
         """Generates a response using a function or from a pre-configured list."""
         user_prompt = history[-1].content if history else ""
 

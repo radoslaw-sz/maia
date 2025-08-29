@@ -17,8 +17,7 @@ class ExistingAgentProvider(BaseProvider):
     def get_provider_name(self) -> str:
         return "Existing"
     
-    async def generate(self, history: List[Message], system_message: str = "", ignore_trigger_prompt: str = "") -> AgentResponse:
-        start_time = time.time()
+    async def generate(self, history: List[Message], system_message: str = "") -> AgentResponse:
         user_prompt = history[-1].content if history else ""
         
         try:
@@ -36,15 +35,12 @@ class ExistingAgentProvider(BaseProvider):
                 else:
                     raise ValueError(f"Don't know how to call agent: {self.agent_instance}")
             
-            processing_time = time.time() - start_time
-            
             # Extract content using the provided extractor function
             content = self.response_extractor(raw_response)
             
             return AgentResponse(
                 content=content,
                 metadata={"agent_type": "existing"},
-                processing_time=processing_time,
                 raw_response=raw_response,
             )
             
@@ -52,5 +48,4 @@ class ExistingAgentProvider(BaseProvider):
             return AgentResponse(
                 content="",
                 metadata={"error": True, "error_message": str(e)},
-                processing_time=time.time() - start_time,
             )

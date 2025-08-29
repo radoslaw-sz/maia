@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maia-test-framework"
-version = "0.3.0"
+version = "0.3.1"
 description = "A pytest-based framework for testing multi AI agents system. It provides a flexible and extensible platform for creating and running complex multi-agent simulations and capturing the results."
 authors = [{name = "Radosław Szymkiewicz", email = "szymkiewicz.radoslaw@gmail.com"}]
 readme = "README.md"
@@ -19,14 +19,14 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pydantic-settings>=2.8.1",
     "httpx>=0.28.1",
     "structlog>=25.2.0",
-    "litellm>=1.74.9.post1",
+    "litellm>=1.74.9",
     "pytest-json-report>=1.5.0",
     "pytest",
     "pytest-json-report"
@@ -42,6 +42,9 @@ docs = [
     "mkdocstrings[python]>=0.20.0",
 ]
 integrations = [
+    "langchain>=0.0.350",
+    "langchain-ollama>=0.3.7",
+    "crewai>0.165.0"
 ]
 
 [project.urls]

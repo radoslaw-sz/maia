@@ -32,9 +32,12 @@ class Message:
 class AgentResponse:
     content: str
     metadata: Dict[str, Any] = field(default_factory=dict)
-    processing_time: float = 0.0
     raw_response: Any = None  # Store the original provider response
     
     def get_metadata(self, key: str, default: Any = None) -> Any:
         """Get metadata value with default"""
         return self.metadata.get(key, default)
+
+@dataclass
+class TimedAgentResponse(AgentResponse):
+    processing_time: float = 0.0

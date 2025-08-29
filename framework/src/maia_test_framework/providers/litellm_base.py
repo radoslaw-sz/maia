@@ -16,14 +16,10 @@ class LiteLLMBaseProvider(BaseProvider):
     def get_provider_name(self) -> str:
         return self.model
 
-    def _prepare_messages(self, history: List[Message], system_message: str, ignore_trigger_prompt: str) -> List[Dict[str, str]]:
-        full_system_prompt = system_message
-        if ignore_trigger_prompt:
-            full_system_prompt += f"\n\n{ignore_trigger_prompt}"
-
+    def _prepare_messages(self, history: List[Message], system_message: str) -> List[Dict[str, str]]:
         messages_payload = []
-        if full_system_prompt.strip():
-            messages_payload.append({"role": "system", "content": full_system_prompt.strip()})
+        if system_message.strip():
+            messages_payload.append({"role": "system", "content": system_message.strip()})
         
         for message in history:
             role = message.sender_type
@@ -40,13 +36,11 @@ class LiteLLMBaseProvider(BaseProvider):
         """Subclasses must implement this to provide specific kwargs for litellm.completion."""
         raise NotImplementedError
 
-    async def generate(self, history: List[Message], system_message: str = "", ignore_trigger_prompt: str = "") -> AgentResponse:
+    async def generate(self, history: List[Message], system_message: str = "") -> AgentResponse:
         if self.api_base:
             await wait_for_service(self.api_base)
 
-        messages_payload = self._prepare_messages(history, system_message, ignore_trigger_prompt)
-        
-        start = time.time()
+        messages_payload = self._prepare_messages(history, system_message)
         
         try:
             kwargs = self._get_completion_kwargs(messages_payload)
@@ -61,6 +55,5 @@ class LiteLLMBaseProvider(BaseProvider):
         return AgentResponse(
             content=content,
             raw_response=raw_response_data,
-            processing_time=time.time() - start,
             metadata={"model": self.model},
         )
