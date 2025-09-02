@@ -1,6 +1,6 @@
 import pytest
-from src.maia_test_framework.testing.base import MaiaTest
-from src.maia_test_framework.providers.mock import MockProvider
+from maia_test_framework.testing.base import MaiaTest
+from maia_test_framework.providers.mock import MockProvider
 
 class TestMockProvider(MaiaTest):
     def setup_agents(self):

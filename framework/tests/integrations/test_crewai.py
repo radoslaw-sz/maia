@@ -3,7 +3,7 @@ from crewai import Agent, Task, Crew, LLM
 import pytest
 from maia_test_framework.providers.crewai import CrewAIProvider
 from maia_test_framework.core.message import Message
-from src.maia_test_framework.testing.base import MaiaTest
+from maia_test_framework.testing.base import MaiaTest
 
 # Input mapper (maps history to Crew input)
 def crew_input_mapper(history: List[Message], system_message: str):

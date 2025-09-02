@@ -1,6 +1,6 @@
 from typing import Dict, Any
 import asyncio
-from src.maia_test_framework.core.tools.base import BaseTool
+from maia_test_framework.core.tools.base import BaseTool
 
 class WeatherAPITool(BaseTool):
     """Weather API tool for testing"""

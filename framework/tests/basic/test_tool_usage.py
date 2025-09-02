@@ -1,7 +1,7 @@
 import pytest
-from src.maia_test_framework.providers.generic_lite_llm import GenericLiteLLMProvider
-from src.maia_test_framework.testing.assertions.agents_participation import assert_agent_participated
-from src.maia_test_framework.testing.base import MaiaTest
+from maia_test_framework.providers.generic_lite_llm import GenericLiteLLMProvider
+from maia_test_framework.testing.assertions.agents_participation import assert_agent_participated
+from maia_test_framework.testing.base import MaiaTest
 from tests.tools.weather_api import WeatherAPITool
 
 class TestToolUsage(MaiaTest):

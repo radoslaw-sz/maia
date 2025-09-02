@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maia-test-framework"
-version = "0.3.1"
+version = "0.4.0"
 description = "A pytest-based framework for testing multi AI agents system. It provides a flexible and extensible platform for creating and running complex multi-agent simulations and capturing the results."
 authors = [{name = "Radosław Szymkiewicz", email = "szymkiewicz.radoslaw@gmail.com"}]
 readme = "README.md"

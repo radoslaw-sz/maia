@@ -1,10 +1,12 @@
 import pytest
-from src.maia_test_framework.providers.generic_lite_llm import GenericLiteLLMProvider
-from src.maia_test_framework.providers.ollama import OllamaProvider
-from src.maia_test_framework.testing.assertions.content_patterns import assert_professional_tone
-from src.maia_test_framework.testing.assertions.agents_participation import assert_agent_participated
-from src.maia_test_framework.testing.base import MaiaTest
-from src.maia_test_framework.testing.validators.conversation import ConversationValidator
+from maia_test_framework.core.orchestration_agent import OrchestrationAgent
+from maia_test_framework.providers.generic_lite_llm import GenericLiteLLMProvider
+from maia_test_framework.providers.ollama import OllamaProvider
+from maia_test_framework.testing.assertions.content_patterns import assert_professional_tone
+from maia_test_framework.testing.assertions.agents_participation import assert_agent_participated
+from maia_test_framework.testing.base import MaiaTest
+from maia_test_framework.testing.validators.conversation import ConversationValidator
+from maia_test_framework.core.types.orchestration_policy import OrchestrationPolicy
 
 class TestConversationSessions(MaiaTest):
     def setup_agents(self):
@@ -26,8 +28,17 @@ class TestConversationSessions(MaiaTest):
         )
 
     @pytest.mark.asyncio
-    async def test_conversation_broadcast(self):
+    async def test_conversation_broadcast_no_policy(self):
         session = self.create_session(["Alice", "Bob"])
+
+        await session.user_says_and_broadcast("Please describe the usual weather in London in July, including temperature and conditions.")
+        
+        assert_agent_participated(session, 'Alice')
+        assert_agent_participated(session, "Bob")
+
+    @pytest.mark.asyncio
+    async def test_conversation_broadcast_ignore_message_policy(self):
+        session = self.create_session(["Alice", "Bob"], orchestration_policy=OrchestrationPolicy.IGNORE_MESSAGE)
 
         # Test that only Alice responds to a weather question
         response_a, responder_a = await session.user_says_and_broadcast("Please describe the usual weather in London in July, including temperature and conditions.")
@@ -47,6 +58,31 @@ class TestConversationSessions(MaiaTest):
         response_c, responder_c = await session.user_says_and_broadcast("What is the capital of France?")
         assert response_c is None
         assert responder_c is None
+
+    @pytest.mark.asyncio
+    async def test_conversation_broadcast_orchestration_policy(self):
+        orchestration_agent = OrchestrationAgent(self.get_provider("ollama"))
+        session = self.create_session(["Alice", "Bob"], orchestration_agent=orchestration_agent, orchestration_policy=OrchestrationPolicy.ORCHESTRATION_AGENT)
+
+        # Test that only Alice responds to a weather question
+        response_a, responder_a = await session.user_says_and_broadcast("Please describe the usual weather in London in July, including temperature and conditions.")
+        
+        print(f"{responder_a}: {response_a.content}")
+        assert responder_a == 'Alice'
+        assert_agent_participated(session, 'Alice')
+
+        # Test that only Bob responds to a clothing question
+        response_b, responder_b = await session.user_says_and_broadcast(f"Given the weather: {response_a.content}, what clothes should I wear?")
+        
+        print(f"{responder_b}: {response_b.content}")
+        assert responder_b == 'Bob'
+        assert_agent_participated(session, 'Bob')
+
+        # Test that no one responds to an irrelevant question
+        response_c, responder_c = await session.user_says_and_broadcast("What is the capital of France?")
+        assert response_c is None
+        assert responder_c is None
+
 
     @pytest.mark.asyncio
     async def test_conversation_direct_message(self):

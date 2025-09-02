@@ -16,6 +16,7 @@ from maia_test_framework.testing.mixin.provider_mixin import ProviderMixin
 from maia_test_framework.testing.validators.base import BaseValidator
 from maia_test_framework.testing.assertions.base import MaiaAssertion
 from maia_test_framework.core.exceptions import MaiaAssertionError
+from maia_test_framework.core.types.orchestration_policy import OrchestrationPolicy
 
 @dataclass
 class Participant:
@@ -224,7 +225,7 @@ class MaiaTest(ABC, ProviderMixin):
             self._run_message_assertion(assertion_object, message=response_msg)
         return wrapper
 
-    def create_session(self, agent_names: List[str] = None, assertions: List[Callable[[Message], None]] = None, session_id: str = None) -> Session:
+    def create_session(self, agent_names: List[str] = None, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: Agent = None, orchestration_policy: OrchestrationPolicy = None) -> Session:
         """Create a new session with specified agents"""
         bus = CommunicationBus()
 
@@ -233,7 +234,7 @@ class MaiaTest(ABC, ProviderMixin):
             for original_assertion in assertions:
                 wrapped_assertions.append(self._create_assertion_wrapper(original_assertion))
 
-        session = Session(bus, wrapped_assertions, session_id)
+        session = Session(bus, wrapped_assertions, session_id, orchestration_agent, orchestration_policy)
 
         agents_to_add = []
         if agent_names:
@@ -246,6 +247,9 @@ class MaiaTest(ABC, ProviderMixin):
 
         for agent in agents_to_add:
             session.add_participant(agent)
+
+        if orchestration_agent:
+            session.add_participant(orchestration_agent)
 
         self.sessions.append(session)
         return session

@@ -1,7 +1,7 @@
 import pytest
 import asyncio
-from src.maia_test_framework.testing.base import MaiaTest
-from src.maia_test_framework.providers.existing import ExistingAgentProvider
+from maia_test_framework.testing.base import MaiaTest
+from maia_test_framework.providers.existing import ExistingAgentProvider
 
 # Mock agent implementations for testing
 

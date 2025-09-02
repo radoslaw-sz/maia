@@ -3,15 +3,19 @@ from typing import Callable, List, Optional, Tuple
 from maia_test_framework.core.communication_bus import CommunicationBus
 from maia_test_framework.core.message import Message, AgentResponse, IGNORE_MESSAGE
 from maia_test_framework.core.agent import Agent
+from maia_test_framework.core.orchestration_agent import OrchestrationAgent
 from maia_test_framework.core.exceptions import MaiaAssertionError
+from maia_test_framework.core.types.orchestration_policy import OrchestrationPolicy
 
 class Session:
     """High-level abstraction for a conversation session."""
     
-    def __init__(self, bus: CommunicationBus, assertions: List[Callable[[Message], None]] = None, session_id: str = None):
+    def __init__(self, bus: CommunicationBus, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: OrchestrationAgent = None, orchestration_policy: OrchestrationPolicy = None):
         self.id = session_id or str(uuid.uuid4())
         self.bus = bus
         self.assertions = assertions or []
+        self.orchestration_agent = orchestration_agent
+        self.orchestration_policy = orchestration_policy
     
     def add_participant(self, agent: Agent):
         """Add a participant (agent) to the session."""
@@ -58,17 +62,33 @@ class Session:
         self.bus.add_message(msg)
         history = self.bus.get_history()
 
+        if self.orchestration_policy == OrchestrationPolicy.ORCHESTRATION_AGENT and self.orchestration_agent:
+            agents = list(self.bus.agents.values())
+            response = await self.orchestration_agent.generate_response(history, agents)
+
+            agent_name = response.content.strip()
+            
+            if agent_name in self.bus.agents:
+                agent_response = await self.agent_responds(agent_name)
+                return agent_response, agent_name
+            else:
+                return None, None
+        
         for agent_name, agent in self.bus.agents.items():
+            if self.orchestration_agent and agent_name == self.orchestration_agent.name:
+                continue
+
             response = await agent.generate_response(history)
-            if response.content.strip() != IGNORE_MESSAGE:
-                response_msg = Message(
-                    content=response.content,
-                    sender=agent_name,
-                    sender_type="agent",
-                    metadata=response.metadata
-                )
-                self.bus.add_message(response_msg)
-                return response, agent_name
+            if self.orchestration_policy == OrchestrationPolicy.IGNORE_MESSAGE and response.content.strip() == IGNORE_MESSAGE:
+                continue
+            response_msg = Message(
+                content=response.content,
+                sender=agent_name,
+                sender_type="agent",
+                metadata=response.metadata
+            )
+            self.bus.add_message(response_msg)
+            return response, agent_name
         
         return None, None
 

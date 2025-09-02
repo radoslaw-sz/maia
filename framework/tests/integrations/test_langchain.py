@@ -2,10 +2,10 @@ import pytest
 from langchain_ollama import OllamaLLM
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from src.maia_test_framework.providers.langchain import LangChainProvider
-from src.maia_test_framework.testing.base import MaiaTest
+from maia_test_framework.providers.langchain import LangChainProvider
+from maia_test_framework.testing.base import MaiaTest
 from typing import List, Dict, Any
-from src.maia_test_framework.core.message import Message
+from maia_test_framework.core.message import Message
 
 def simple_input_mapper(history: List[Message], system_message: str) -> Dict[str, Any]:
     user_prompt = history[-1].content if history else ""
