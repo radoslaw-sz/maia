@@ -50,8 +50,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -U pip
-          pip install -e ./maia_test_framework
+          python -m pip install -U pip
+          python -m pip install -e ./framework
           pip install pytest pytest-asyncio
 
       # Run tests with Maia plugin
