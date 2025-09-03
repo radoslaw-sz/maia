@@ -48,11 +48,10 @@ jobs:
           nohup ollama serve > /tmp/ollama.log 2>&1 &
           sleep 5
 
-      # Install dependencies
       - name: Install dependencies
         run: |
           pip install -U pip
-          pip install -e maia_test_framework
+          pip install -e ./maia_test_framework
           pip install pytest pytest-asyncio
 
       # Run tests with Maia plugin
