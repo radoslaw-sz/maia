@@ -23,9 +23,13 @@ jobs:
           curl -fsSL https://ollama.com/install.sh | sh
           ollama --version
 
-      # Cache Ollama models
-      - name: Cache Ollama models
-        uses: actions/cache@v4
+      # Ensure Ollama models dir exists
+      - name: Ensure Ollama models dir exists
+        run: mkdir -p ~/.ollama/models
+
+      # Restore Ollama models cache
+      - name: Restore Ollama models cache
+        uses: actions/cache/restore@v4
         id: ollama-cache
         with:
           path: ~/.ollama/models
@@ -39,7 +43,7 @@ jobs:
           if [ ! -d ~/.ollama/models/mistral ]; then
             ollama pull mistral
           else
-            echo "Mistral model already cached. "
+            echo "Mistral model already cached."
           fi
 
       # Start Ollama service
@@ -48,11 +52,12 @@ jobs:
           nohup ollama serve > /tmp/ollama.log 2>&1 &
           sleep 5
 
+      # Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install -U pip
           python -m pip install -e ./framework
-          pip install pytest pytest-asyncio
+          python -m pip install pytest pytest-asyncio
 
       # Run tests with Maia plugin
       - name: Run tests
@@ -66,3 +71,11 @@ jobs:
         with:
           name: maia-results
           path: results.json
+
+      # Save Ollama models cache after run
+      - name: Save Ollama models cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: ~/.ollama/models
+          key: ollama-models-${{ runner.os }}-mistral
