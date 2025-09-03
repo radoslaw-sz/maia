@@ -1,13 +1,17 @@
 import pytest
 from functools import partial
 from maia_test_framework.testing.base import MaiaTest
+from maia_test_framework.providers.generic_lite_llm import GenericLiteLLMProvider
 from maia_test_framework.testing.assertions.content_patterns import assert_professional_tone, assert_no_hallucination_markers, assert_contains_pattern
 
 class TestContentAssertions(MaiaTest):
     def setup_agents(self):
         self.create_agent(
             name="Alice",
-            provider=self.get_provider("ollama"),
+            provider=GenericLiteLLMProvider(config={
+                "model": "ollama/mistral",
+                "api_base": "http://localhost:11434"
+            }),
             system_message="You are a helpful AI assistant. You will follow user instructions precisely."
         )
 
