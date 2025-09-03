@@ -43,7 +43,7 @@ jobs:
           if [ ! -d ~/.ollama/models/mistral ]; then
             ollama pull mistral
           else
-            echo "Mistral model already cached."
+            echo "Mistral model already cached. "
           fi
 
       # Start Ollama service
