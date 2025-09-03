@@ -1,0 +1,73 @@
+name: Maia Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Install Ollama
+      - name: Install Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama --version
+
+      # Cache Ollama models
+      - name: Cache Ollama models
+        uses: actions/cache@v4
+        id: ollama-cache
+        with:
+          path: ~/.ollama/models
+          key: ollama-models-${{ runner.os }}-mistral
+          restore-keys: |
+            ollama-models-${{ runner.os }}-
+
+      # Pull Mistral model only if cache miss
+      - name: Pull Mistral model
+        run: |
+          if [ ! -d ~/.ollama/models/mistral ]; then
+            ollama pull mistral
+          else
+            echo "Mistral model already cached."
+          fi
+
+      # Start Ollama service
+      - name: Start Ollama service
+        run: |
+          nohup ollama serve > /tmp/ollama.log 2>&1 &
+          sleep 5
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install -U pip
+          pip install -e maia_test_framework
+          pip install pytest pytest-asyncio
+
+      # Run tests with Maia plugin
+      - name: Run tests
+        run: |
+          pytest framework/tests/basic/test_content_assertions.py --maia-report results.json
+          cat results.json
+
+      # Upload unified test report as artifact
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: maia-results
+          path: results.json

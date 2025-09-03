@@ -59,16 +59,9 @@ class TestResult:
             json.dump(asdict(self), f, indent=2)
 
 class MaiaTest(ABC, ProviderMixin):
-    """Base class for multi-agent tests"""
-    _run_output_dir = None
 
     def setup_method(self, method):
         """Setup run before each test method"""
-        if MaiaTest._run_output_dir is None:
-            base_output_dir = os.getenv("MAIA_TEST_OUTPUT_DIR", "test_reports")
-            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-            MaiaTest._run_output_dir = os.path.join(base_output_dir, timestamp)
-
         self.test_name = method.__name__
         self.start_time = datetime.now().isoformat()
         self.agents: Dict[str, Agent] = {}
@@ -85,13 +78,6 @@ class MaiaTest(ABC, ProviderMixin):
     def teardown_method(self, method):
         """Cleanup after each test method"""
         
-        # Determine final test status from pytest reports
-        final_pytest_status = "passed"
-        if (hasattr(self, 'rep_setup') and self.rep_setup.failed) or \
-           (hasattr(self, 'rep_call') and self.rep_call.failed) or \
-           (hasattr(self, 'rep_teardown') and self.rep_teardown.failed):
-            final_pytest_status = "failed"
-
         # Run Validators only if the test call didn't already fail unexpectedly
         if not (hasattr(self, 'rep_call') and self.rep_call.failed):
             for validator_class in self.validators:
@@ -108,48 +94,6 @@ class MaiaTest(ABC, ProviderMixin):
                         status="failed",
                         details={"error": str(e), "traceback": traceback.format_exc()}
                     ))
-
-        # Collect Participants and Session Data from message history
-        all_participants = {}
-        session_data = []
-        for s in self.sessions:
-            history = [msg.to_dict() for msg in s.message_history]
-            session_participant_ids = set()
-
-            for msg in s.message_history:
-                session_participant_ids.add(msg.sender)
-                if msg.receiver:
-                    session_participant_ids.add(msg.receiver)
-
-            for participant_id in session_participant_ids:
-                if participant_id not in all_participants:
-                    if participant_id == "user":
-                        all_participants[participant_id] = Participant(id="user", name="User", type="user")
-                    elif participant_id in self.agents:
-                        agent = self.agents[participant_id]
-                        all_participants[participant_id] = Participant(id=participant_id, name=participant_id, type="agent", metadata={"model": agent.provider.__class__.__name__})
-                    elif participant_id in self.tools:
-                        all_participants[participant_id] = Participant(id=participant_id, name=participant_id, type="tool")
-
-            session_data.append({
-                "id": s.id,
-                "participants": list(session_participant_ids),
-                "messages": history,
-            })
-        
-        participants = list(all_participants.values())
-        
-        result = TestResult(
-            test_name=self.test_name,
-            start_time=self.start_time,
-            end_time=datetime.now().isoformat(),
-            status=final_pytest_status, # Use the status from pytest
-            participants=participants,
-            sessions=session_data,
-            assertions=self.assertion_results,
-            validators=self.validator_results
-        )
-        result.save(output_dir=MaiaTest._run_output_dir)
 
         self.sessions.clear()
 
