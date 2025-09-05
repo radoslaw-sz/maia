@@ -32,7 +32,7 @@ jobs:
         uses: actions/cache/restore@v4
         id: ollama-cache
         with:
-          path: ~/.ollama/models
+          path: $HOME/.ollama/models
           key: ollama-models-${{ runner.os }}-mistral
           restore-keys: |
             ollama-models-${{ runner.os }}-
@@ -77,5 +77,5 @@ jobs:
         uses: actions/cache/save@v4
         if: always()
         with:
-          path: ~/.ollama/models
+          path: $HOME/.ollama/models
           key: ollama-models-${{ runner.os }}-mistral
