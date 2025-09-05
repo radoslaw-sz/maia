@@ -23,10 +23,6 @@ jobs:
           curl -fsSL https://ollama.com/install.sh | sh
           ollama --version
 
-      # Ensure Ollama models dir exists
-      - name: Ensure Ollama models dir exists
-        run: mkdir -p ~/.ollama/models
-
       # Restore Ollama models cache
       - name: Restore Ollama models cache
         uses: actions/cache/restore@v4
@@ -37,14 +33,27 @@ jobs:
           restore-keys: |
             ollama-models-${{ runner.os }}-
 
+      # Debug after restore
+      - name: Debug Ollama models path (after restore)
+        run: |
+          echo "Contents of ~/.ollama after cache restore:"
+          ls -R $HOME/.ollama || echo "No ~/.ollama directory found"
+
       # Pull Mistral model only if cache miss
       - name: Pull Mistral model
         run: |
           if [ ! -d ~/.ollama/models/mistral ]; then
+            echo "No cached model found, pulling mistral..."
             ollama pull mistral
           else
             echo "Mistral model already cached."
           fi
+
+      # Debug after pull
+      - name: Debug Ollama models path (after pull)
+        run: |
+          echo "Contents of ~/.ollama after pull:"
+          ls -R $HOME/.ollama || echo "No ~/.ollama directory found"
 
       # Start Ollama service
       - name: Start Ollama service
@@ -71,6 +80,12 @@ jobs:
         with:
           name: maia-results
           path: results.json
+
+      # Debug before saving cache
+      - name: Debug Ollama models path (before save)
+        run: |
+          echo "Contents of ~/.ollama before cache save:"
+          ls -R $HOME/.ollama || echo "No ~/.ollama directory found"
 
       # Save Ollama models cache after run
       - name: Save Ollama models cache
