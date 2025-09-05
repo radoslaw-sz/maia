@@ -55,6 +55,11 @@ jobs:
           echo "Contents of ~/.ollama after pull:"
           ls -R $HOME/.ollama || echo "No ~/.ollama directory found"
 
+      - name: Find Ollama model storage
+        run: |
+          echo "Searching for mistral model files..."
+          sudo find / -type d -name "mistral" 2>/dev/null | head -n 20
+
       # Start Ollama service
       - name: Start Ollama service
         run: |
