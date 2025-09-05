@@ -2,9 +2,9 @@ from abc import ABC
 from datetime import datetime
 import json
 import os
-import functools
 from typing import Callable, Dict, List, Literal, Any
 from dataclasses import dataclass, asdict, field
+
 import traceback
 
 from maia_test_framework.core.agent import Agent
@@ -13,7 +13,6 @@ from maia_test_framework.core.session import Session
 from maia_test_framework.core.communication_bus import CommunicationBus
 from maia_test_framework.core.tools.base import BaseTool
 from maia_test_framework.testing.mixin.provider_mixin import ProviderMixin
-from maia_test_framework.testing.validators.base import BaseValidator
 from maia_test_framework.testing.assertions.base import MaiaAssertion
 from maia_test_framework.core.exceptions import MaiaAssertionError
 from maia_test_framework.core.types.orchestration_policy import OrchestrationPolicy
@@ -66,7 +65,6 @@ class MaiaTest(ABC, ProviderMixin):
         self.start_time = datetime.now().isoformat()
         self.agents: Dict[str, Agent] = {}
         self.sessions: List[Session] = []
-        self.validators: List[BaseValidator] = []
         self.tools: Dict[str, BaseTool] = {}
         self.assertion_results: List[AssertionResult] = []
         self.validator_results: List[ValidatorResult] = []
@@ -74,27 +72,8 @@ class MaiaTest(ABC, ProviderMixin):
         self.setup_agents()
         self.setup_session()
 
-
     def teardown_method(self, method):
-        """Cleanup after each test method"""
-        
-        # Run Validators only if the test call didn't already fail unexpectedly
-        if not (hasattr(self, 'rep_call') and self.rep_call.failed):
-            for validator_class in self.validators:
-                validator = validator_class(self.sessions[0]) # Assuming one session for now
-                try:
-                    validator.validate()
-                    self.validator_results.append(ValidatorResult(
-                        name=validator.__class__.__name__,
-                        status="passed"
-                    ))
-                except Exception as e:
-                    self.validator_results.append(ValidatorResult(
-                        name=validator.__class__.__name__,
-                        status="failed",
-                        details={"error": str(e), "traceback": traceback.format_exc()}
-                    ))
-
+        """Cleanup after each test method - validators are now handled by pytest plugin"""
         self.sessions.clear()
 
     def _execute_and_record_assertion(self, assertion: MaiaAssertion, assertion_name: str, metadata: Dict[str, Any]):
@@ -169,7 +148,7 @@ class MaiaTest(ABC, ProviderMixin):
             self._run_message_assertion(assertion_object, message=response_msg)
         return wrapper
 
-    def create_session(self, agent_names: List[str] = None, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: Agent = None, orchestration_policy: OrchestrationPolicy = None) -> Session:
+    def create_session(self, agent_names: List[str] = None, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: Agent = None, orchestration_policy: OrchestrationPolicy = None, validators: List[Callable[[Session], None]] = None) -> Session:
         """Create a new session with specified agents"""
         bus = CommunicationBus()
 
@@ -178,7 +157,7 @@ class MaiaTest(ABC, ProviderMixin):
             for original_assertion in assertions:
                 wrapped_assertions.append(self._create_assertion_wrapper(original_assertion))
 
-        session = Session(bus, wrapped_assertions, session_id, orchestration_agent, orchestration_policy)
+        session = Session(bus, wrapped_assertions, session_id, orchestration_agent, orchestration_policy, validators)
 
         agents_to_add = []
         if agent_names:
@@ -198,20 +177,21 @@ class MaiaTest(ABC, ProviderMixin):
         self.sessions.append(session)
         return session
 
-    def run_validator(self, validator_instance: BaseValidator):
+    def run_validator(self, validator: Callable[[Session], None], session: Session):
         """Manually runs a validator and records its result."""
-        validator_name = validator_instance.__class__.__name__
+        validator_name = validator.__name__
         try:
-            validator_instance.validate()
+            validator(session)
             self.validator_results.append(ValidatorResult(
                 name=validator_name,
                 status="passed"
             ))
         except AssertionError as e:
+            failure_details = {"error": str(e), "traceback": traceback.format_exc()}
             self.validator_results.append(ValidatorResult(
                 name=validator_name,
                 status="failed",
-                details={"error": str(e)}
+                details=failure_details
             ))
             raise  # Re-raise to allow pytest.raises to catch it
 

@@ -33,9 +33,53 @@ def pytest_configure(config):
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
+    """Create test reports and attach them to items - keep this separate!"""
     outcome = yield
     rep = outcome.get_result()
     setattr(item, "rep_" + rep.when, rep)
+    if hasattr(item, "instance"):
+        setattr(item.instance, "rep_" + rep.when, rep)
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_call(item):
+    """Run validators after test execution but before teardown"""
+    from maia_test_framework.testing.base import MaiaTest, ValidatorResult
+    
+    # Run the actual test
+    outcome = yield
+    
+    # Only process MaiaTest instances
+    if not hasattr(item, 'instance') or not isinstance(item.instance, MaiaTest):
+        return
+        
+    test_instance = item.instance
+    
+    # Only run validators if the test didn't already fail
+    if not outcome.excinfo:
+        
+        validator_failures = []
+        
+        for session in test_instance.sessions:
+            for validator in session.validators:
+                try:
+                    validator(session)
+                    test_instance.validator_results.append(ValidatorResult(
+                        name=validator.__name__,
+                        status="passed"
+                    ))
+                except Exception as e:
+                    failure_details = {"error": str(e), "traceback": traceback.format_exc()}
+                    test_instance.validator_results.append(ValidatorResult(
+                        name=validator.__name__,
+                        status="failed",
+                        details=failure_details
+                    ))
+                    validator_failures.append(f"Validator '{validator.__name__}' failed: {str(e)}")
+        
+        # If any validators failed, fail the test
+        if validator_failures:
+            failure_message = "Test validators failed:\n" + "\n".join(validator_failures)
+            pytest.fail(failure_message)
 
 def pytest_runtest_teardown(item):
     """Called after test teardown. Save test results here."""
@@ -91,19 +135,13 @@ def pytest_runtest_teardown(item):
         assertions=test_instance.assertion_results,
         validators=test_instance.validator_results
     )
-    
+
     if _run_output_dir:
         result.save(output_dir=_run_output_dir)
 
 def pytest_sessionfinish(session, exitstatus):
     report_path = session.config.getoption("--maia-report")
     if not report_path:
-        return
-
-    if not _run_output_dir or not os.path.exists(_run_output_dir):
-        session.config.pluginmanager.get_plugin("terminalreporter").write_line(
-            f"Maia report directory not found: {_run_output_dir}"
-        )
         return
 
     latest_run_dir = Path(_run_output_dir)
@@ -128,7 +166,3 @@ def pytest_sessionfinish(session, exitstatus):
 
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(merged_results, f, indent=2)
-
-    session.config.pluginmanager.get_plugin("terminalreporter").write_line(
-        f"Maia unified report written to {out_path}"
-    )

@@ -5,7 +5,6 @@ from maia_test_framework.providers.ollama import OllamaProvider
 from maia_test_framework.testing.assertions.content_patterns import assert_professional_tone
 from maia_test_framework.testing.assertions.agents_participation import assert_agent_participated
 from maia_test_framework.testing.base import MaiaTest
-from maia_test_framework.testing.validators.conversation import ConversationValidator
 from maia_test_framework.core.types.orchestration_policy import OrchestrationPolicy
 
 class TestConversationSessions(MaiaTest):
@@ -150,14 +149,3 @@ class TestConversationSessions(MaiaTest):
         )
         
         assert len(conversation_log) == 7  # 3 turns each + initial message
-
-    @pytest.mark.asyncio
-    async def test_agent_conversation_fails_on_etiquette(self):
-        session = self.create_session(["Alice", "Bob"])
-        
-        await session.agent_says("Alice", "Bob", "What's the weather?")
-        await session.agent_responds("Alice")
-
-        with pytest.raises(AssertionError, match=r"Agent Alice sent two messages in a row."):
-            # This will be called in teardown, but we can call it manually for testing
-            self.run_validator(ConversationValidator(session))

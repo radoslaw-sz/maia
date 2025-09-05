@@ -10,12 +10,13 @@ from maia_test_framework.core.types.orchestration_policy import OrchestrationPol
 class Session:
     """High-level abstraction for a conversation session."""
     
-    def __init__(self, bus: CommunicationBus, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: OrchestrationAgent = None, orchestration_policy: OrchestrationPolicy = None):
+    def __init__(self, bus: CommunicationBus, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: OrchestrationAgent = None, orchestration_policy: OrchestrationPolicy = None, validators: List[Callable[['Session'], None]] = None):
         self.id = session_id or str(uuid.uuid4())
         self.bus = bus
         self.assertions = assertions or []
         self.orchestration_agent = orchestration_agent
         self.orchestration_policy = orchestration_policy
+        self.validators = validators or []
     
     def add_participant(self, agent: Agent):
         """Add a participant (agent) to the session."""
@@ -36,7 +37,7 @@ class Session:
 
         response = await agent.generate_response(history)
 
-        if response.content.strip() == IGNORE_MESSAGE:
+        if IGNORE_MESSAGE in response.content.strip():
             return None
 
         response_msg = Message(
@@ -79,7 +80,7 @@ class Session:
                 continue
 
             response = await agent.generate_response(history)
-            if self.orchestration_policy == OrchestrationPolicy.IGNORE_MESSAGE and response.content.strip() == IGNORE_MESSAGE:
+            if self.orchestration_policy == OrchestrationPolicy.IGNORE_MESSAGE and IGNORE_MESSAGE in response.content.strip() :
                 continue
             response_msg = Message(
                 content=response.content,
