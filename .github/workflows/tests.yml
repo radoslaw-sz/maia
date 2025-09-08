@@ -2,6 +2,9 @@ name: Maia Tests
 
 on: [push]
 
+env:
+  OLLAMA_MODELS: /usr/share/ollama/.ollama/models
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -41,7 +44,7 @@ jobs:
         uses: actions/cache/restore@v4
         id: ollama-cache
         with:
-          path: ~/.ollama
+          path: /usr/share/ollama/.ollama/models
           key: ollama-models-${{ runner.os }}-mistral-v2
           restore-keys: |
             ollama-models-${{ runner.os }}-mistral-
@@ -93,5 +96,5 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.ollama-cache.outputs.cache-hit != 'true'
         with:
-          path: ~/.ollama/models
+          path: /usr/share/ollama/.ollama/models
           key: ollama-models-${{ runner.os }}-mistral-v3
