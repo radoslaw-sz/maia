@@ -3,7 +3,7 @@ name: Maia Tests
 on: [push]
 
 env:
-  OLLAMA_MODELS: /usr/share/ollama/.ollama/models
+  OLLAMA_MODELS: ~/.ollama/models
 
 jobs:
   test:
@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache/restore@v4
         id: ollama-cache
         with:
-          path: /usr/share/ollama/.ollama/models
+          path: ~/.ollama/models
           key: ollama-models-${{ runner.os }}-mistral-v2
           restore-keys: |
             ollama-models-${{ runner.os }}-mistral-
@@ -96,5 +96,5 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.ollama-cache.outputs.cache-hit != 'true'
         with:
-          path: /usr/share/ollama/.ollama/models
+          path: ~/.ollama/models
           key: ollama-models-${{ runner.os }}-mistral-v3
