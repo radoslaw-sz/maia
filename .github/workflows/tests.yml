@@ -39,23 +39,6 @@ jobs:
         run: |
           mkdir -p $HOME/.ollama
 
-      # Restore Ollama models cache
-      - name: Restore Ollama models cache
-        uses: actions/cache/restore@v4
-        id: ollama-cache
-        with:
-          path: ~/.ollama/models
-          key: ollama-models-${{ runner.os }}-mistral-v2
-          restore-keys: |
-            ollama-models-${{ runner.os }}-mistral-
-            ollama-models-${{ runner.os }}-
-        
-      - name: Debug Ollama environment
-        run: |
-          echo "OLLAMA_MODELS environment: $OLLAMA_MODELS"
-          echo "Ollama serve log:"
-          tail -n 20 /tmp/ollama.log || echo "No log file yet"
-
       # Check if model exists and pull if needed
       - name: Pull Mistral model if not cached
         run: |
@@ -90,11 +73,3 @@ jobs:
         with:
           name: maia-results
           path: results.json
-
-      # Save Ollama models cache
-      - name: Save Ollama models cache
-        uses: actions/cache/save@v4
-        if: steps.ollama-cache.outputs.cache-hit != 'true'
-        with:
-          path: ~/.ollama/models
-          key: ollama-models-${{ runner.os }}-mistral-v3
