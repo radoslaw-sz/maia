@@ -46,6 +46,12 @@ jobs:
           restore-keys: |
             ollama-models-${{ runner.os }}-mistral-
             ollama-models-${{ runner.os }}-
+        
+      - name: Debug Ollama environment
+        run: |
+          echo "OLLAMA_MODELS environment: $OLLAMA_MODELS"
+          echo "Ollama serve log:"
+          tail -n 20 /tmp/ollama.log || echo "No log file yet"
 
       # Check if model exists and pull if needed
       - name: Pull Mistral model if not cached
@@ -70,7 +76,7 @@ jobs:
           python -m pip install pytest pytest-asyncio
 
       # Run tests with Maia plugin
-      - name: Run tests 
+      - name: Run tests
         run: |
           pytest framework/tests/basic/test_content_assertions.py --maia-report results.json
           cat results.json
@@ -87,5 +93,5 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.ollama-cache.outputs.cache-hit != 'true'
         with:
-          path: ~/.ollama
-          key: ollama-models-${{ runner.os }}-mistral-v2
+          path: ~/.ollama/models
+          key: ollama-models-${{ runner.os }}-mistral-v3
