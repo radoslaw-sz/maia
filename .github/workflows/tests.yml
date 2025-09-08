@@ -70,7 +70,7 @@ jobs:
           python -m pip install pytest pytest-asyncio
 
       # Run tests with Maia plugin
-      - name: Run tests
+      - name: Run tests 
         run: |
           pytest framework/tests/basic/test_content_assertions.py --maia-report results.json
           cat results.json
