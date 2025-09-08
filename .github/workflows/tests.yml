@@ -55,15 +55,11 @@ jobs:
           echo "Contents of ~/.ollama after pull:"
           ls -R $HOME/.ollama || echo "No ~/.ollama directory found"
 
-      - name: Locate Ollama models
+      - name: Inspect /usr/share/ollama
         run: |
-          echo "Looking for mistral model files..."
-          for d in "$HOME/.ollama" /usr/share/ollama /var/lib/ollama /usr/local/share/ollama; do
-            if [ -d "$d" ]; then
-              echo "Checking $d"
-              find "$d" -maxdepth 3 -type d -name "mistral" || true
-            fi
-          done
+          echo "Contents of /usr/share/ollama:"
+          sudo ls -R /usr/share/ollama | head -n 200
+
 
       # Start Ollama service
       - name: Start Ollama service
