@@ -23,49 +23,44 @@ jobs:
           curl -fsSL https://ollama.com/install.sh | sh
           ollama --version
 
+      # Start Ollama service first
+      - name: Start Ollama service
+        run: |
+          nohup ollama serve > /tmp/ollama.log 2>&1 &
+          # Wait for service to be ready
+          timeout 30 bash -c 'until curl -s http://localhost:11434/api/tags >/dev/null 2>&1; do sleep 1; done'
+          echo "Ollama service is ready"
+
+      # Create ollama directory structure
+      - name: Create Ollama directories
+        run: |
+          mkdir -p $HOME/.ollama
+
       # Restore Ollama models cache
       - name: Restore Ollama models cache
         uses: actions/cache/restore@v4
         id: ollama-cache
         with:
-          path: $HOME/.ollama/models
-          key: ollama-models-${{ runner.os }}-mistral
+          path: ~/.ollama
+          key: ollama-models-${{ runner.os }}-mistral-v2
           restore-keys: |
+            ollama-models-${{ runner.os }}-mistral-
             ollama-models-${{ runner.os }}-
 
-      # Debug after restore
-      - name: Debug Ollama models path (after restore)
+      # Check if model exists and pull if needed
+      - name: Pull Mistral model if not cached
         run: |
-          echo "Contents of ~/.ollama after cache restore:"
-          ls -R $HOME/.ollama || echo "No ~/.ollama directory found"
-
-      # Pull Mistral model only if cache miss
-      - name: Pull Mistral model
-        run: |
-          if [ ! -d ~/.ollama/models/mistral ]; then
-            echo "No cached model found, pulling mistral..."
-            ollama pull mistral
+          # Check if model exists by listing models
+          if ollama list | grep -q "mistral"; then
+            echo "Mistral model found in cache"
           else
-            echo "Mistral model already cached."
+            echo "Mistral model not found, pulling..."
+            ollama pull mistral
+            echo "Model pulled successfully"
           fi
-
-      # Debug after pull
-      - name: Debug Ollama models path (after pull)
-        run: |
-          echo "Contents of ~/.ollama after pull:"
-          ls -R $HOME/.ollama || echo "No ~/.ollama directory found"
-
-      - name: Inspect /usr/share/ollama
-        run: |
-          echo "Contents of /usr/share/ollama:"
-          sudo ls -R /usr/share/ollama | head -n 200
-
-
-      # Start Ollama service
-      - name: Start Ollama service
-        run: |
-          nohup ollama serve > /tmp/ollama.log 2>&1 &
-          sleep 5
+          
+          # Verify model is available
+          ollama list
 
       # Install dependencies
       - name: Install dependencies
@@ -87,16 +82,10 @@ jobs:
           name: maia-results
           path: results.json
 
-      # Debug before saving cache
-      - name: Debug Ollama models path (before save)
-        run: |
-          echo "Contents of ~/.ollama before cache save:"
-          ls -R $HOME/.ollama || echo "No ~/.ollama directory found"
-
-      # Save Ollama models cache after run
+      # Save Ollama models cache
       - name: Save Ollama models cache
         uses: actions/cache/save@v4
-        if: always()
+        if: steps.ollama-cache.outputs.cache-hit != 'true'
         with:
-          path: $HOME/.ollama/models
-          key: ollama-models-${{ runner.os }}-mistral
+          path: ~/.ollama
+          key: ollama-models-${{ runner.os }}-mistral-v2
