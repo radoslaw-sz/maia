@@ -105,13 +105,11 @@ class MaiaTest(ABC, ProviderMixin):
         assertion_name = assertion.get_name() or "Unnamed Assertion"
         self._execute_and_record_assertion(assertion, assertion_name, metadata={}, session=session)
 
-    def _run_message_assertion(self, assertion: MaiaAssertion, message: Message):
+    def _run_message_assertion(self, assertion: MaiaAssertion, message: Message, session_id: str):
         """Runs a session-level assertion against a specific message."""
         assertion_name = assertion.get_name() or "Unnamed Assertion"
         metadata = {"message": message.to_dict()}
-        if not hasattr(message, 'session_id') or not message.session_id:
-            raise ValueError("Message is not associated with a session, cannot record assertion.")
-        session = self.get_session(message.session_id)
+        session = self.get_session(session_id)
         self._execute_and_record_assertion(assertion, assertion_name, metadata, session=session)
 
     def setup_agents(self):
@@ -143,10 +141,10 @@ class MaiaTest(ABC, ProviderMixin):
             raise ValueError(f"Tool with name '{name}' not found.")
         return self.tools[name]
 
-    def _create_assertion_wrapper(self, original_assertion_factory):
+    def _create_assertion_wrapper(self, original_assertion_factory, session_id: str):
         def wrapper(response_msg):
             assertion_object = original_assertion_factory(response_msg)
-            self._run_message_assertion(assertion_object, message=response_msg)
+            self._run_message_assertion(assertion_object, message=response_msg, session_id=session_id)
         return wrapper
 
     def create_session(self, agent_names: List[str] = None, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: Agent = None, orchestration_policy: OrchestrationPolicy = None, validators: List[Callable[[Session], None]] = None, judge_agent: JudgeAgent = None) -> Session:
@@ -154,14 +152,11 @@ class MaiaTest(ABC, ProviderMixin):
         bus = CommunicationBus()
 
         wrapped_assertions = []
-        if assertions:
-            for original_assertion in assertions:
-                wrapped_assertions.append(self._create_assertion_wrapper(original_assertion))
-
         session = Session(bus, wrapped_assertions, session_id, orchestration_agent, orchestration_policy, validators, judge_agent=judge_agent)
 
-        session.assertion_results = []
-        session.validator_results = []
+        if assertions:
+            for original_assertion in assertions:
+                session.assertions.append(self._create_assertion_wrapper(original_assertion, session_id))
 
         agents_to_add = []
         if agent_names:
@@ -211,7 +206,7 @@ class MaiaTest(ABC, ProviderMixin):
         session = self.get_session(session_id)
         if assertions:
             for original_assertion in assertions:
-                session.assertions.append(self._create_assertion_wrapper(original_assertion))
+                session.assertions.append(self._create_assertion_wrapper(original_assertion, session_id))
 
         if agent_names:
             for name in agent_names:

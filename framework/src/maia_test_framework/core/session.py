@@ -19,6 +19,8 @@ class Session:
         self.orchestration_agent = orchestration_agent
         self.orchestration_policy = orchestration_policy
         self.validators = validators or []
+        self.assertion_results = []
+        self.validator_results = []
         self.judge_agent = judge_agent
         self.judge_result = None
     
