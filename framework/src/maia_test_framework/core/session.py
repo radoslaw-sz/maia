@@ -5,18 +5,22 @@ from maia_test_framework.core.message import Message, AgentResponse, IGNORE_MESS
 from maia_test_framework.core.agent import Agent
 from maia_test_framework.core.orchestration_agent import OrchestrationAgent
 from maia_test_framework.core.exceptions import MaiaAssertionError
+from maia_test_framework.core.judge_agent import JudgeAgent
+from maia_test_framework.core.types.judge_result import JudgeResult
 from maia_test_framework.core.types.orchestration_policy import OrchestrationPolicy
 
 class Session:
     """High-level abstraction for a conversation session."""
     
-    def __init__(self, bus: CommunicationBus, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: OrchestrationAgent = None, orchestration_policy: OrchestrationPolicy = None, validators: List[Callable[['Session'], None]] = None):
+    def __init__(self, bus: CommunicationBus, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: OrchestrationAgent = None, orchestration_policy: OrchestrationPolicy = None, validators: List[Callable[['Session'], None]] = None, judge_agent: JudgeAgent = None):
         self.id = session_id or str(uuid.uuid4())
         self.bus = bus
         self.assertions = assertions or []
         self.orchestration_agent = orchestration_agent
         self.orchestration_policy = orchestration_policy
         self.validators = validators or []
+        self.judge_agent = judge_agent
+        self.judge_result = None
     
     def add_participant(self, agent: Agent):
         """Add a participant (agent) to the session."""
@@ -137,3 +141,23 @@ class Session:
                 break
         
         return conversation_log
+
+    async def judge(self) -> JudgeResult:
+        """
+        Evaluates the session using the attached JudgeAgent and returns the result.
+        """
+        if not self.judge_agent:
+            raise ValueError("No JudgeAgent has been attached to this session.")
+        
+        result = await self.judge_agent.judge_session(self)
+        self.judge_result = result
+        return result
+
+    async def judge_and_assert(self):
+        """
+        Evaluates the session using the attached JudgeAgent and asserts the outcome.
+        """
+        if not self.judge_agent:
+            raise ValueError("No JudgeAgent has been attached to this session.")
+        
+        await self.judge_agent.judge_and_assert(self)

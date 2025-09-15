@@ -12,9 +12,11 @@ from maia_test_framework.core.message import Message
 from maia_test_framework.core.session import Session
 from maia_test_framework.core.communication_bus import CommunicationBus
 from maia_test_framework.core.tools.base import BaseTool
+from maia_test_framework.core.types.judge_result import JudgeResult
 from maia_test_framework.testing.mixin.provider_mixin import ProviderMixin
 from maia_test_framework.testing.assertions.base import MaiaAssertion
 from maia_test_framework.core.exceptions import MaiaAssertionError
+from maia_test_framework.core.judge_agent import JudgeAgent
 from maia_test_framework.core.types.orchestration_policy import OrchestrationPolicy
 
 @dataclass
@@ -46,8 +48,6 @@ class TestResult:
     status: Literal["passed", "failed"]
     participants: List[Participant]
     sessions: List[dict]
-    assertions: List[AssertionResult]
-    validators: List[ValidatorResult]
 
     def save(self, output_dir):
         if not os.path.exists(output_dir):
@@ -66,8 +66,6 @@ class MaiaTest(ABC, ProviderMixin):
         self.agents: Dict[str, Agent] = {}
         self.sessions: List[Session] = []
         self.tools: Dict[str, BaseTool] = {}
-        self.assertion_results: List[AssertionResult] = []
-        self.validator_results: List[ValidatorResult] = []
         self.setup_tools()
         self.setup_agents()
         self.setup_session()
@@ -76,15 +74,15 @@ class MaiaTest(ABC, ProviderMixin):
         """Cleanup after each test method - validators are now handled by pytest plugin"""
         self.sessions.clear()
 
-    def _execute_and_record_assertion(self, assertion: MaiaAssertion, assertion_name: str, metadata: Dict[str, Any]):
-        assertion_id = f"assert_{len(self.assertion_results) + 1}"
+    def _execute_and_record_assertion(self, assertion: MaiaAssertion, assertion_name: str, metadata: Dict[str, Any], session: Session):
+        assertion_id = f"assert_{len(session.assertion_results) + 1}"
         try:
             final_description = None
             result_message = assertion.call()
             if result_message and isinstance(result_message, str):
                 final_description = f"{result_message}"
 
-            self.assertion_results.append(AssertionResult(
+            session.assertion_results.append(AssertionResult(
                 id=assertion_id,
                 assertion_name=assertion_name,
                 description=final_description,
@@ -99,19 +97,22 @@ class MaiaTest(ABC, ProviderMixin):
                 status="failed",
                 metadata=metadata
             )
-            self.assertion_results.append(result)
+            session.assertion_results.append(result)
             raise MaiaAssertionError(str(e), result=result) from e
 
-    def run_assertion(self, assertion: MaiaAssertion):
+    def run_assertion(self, assertion: MaiaAssertion, session: Session):
         """Runs a test-level assertion that is not bound to a specific message."""
         assertion_name = assertion.get_name() or "Unnamed Assertion"
-        self._execute_and_record_assertion(assertion, assertion_name, metadata={})
+        self._execute_and_record_assertion(assertion, assertion_name, metadata={}, session=session)
 
     def _run_message_assertion(self, assertion: MaiaAssertion, message: Message):
         """Runs a session-level assertion against a specific message."""
         assertion_name = assertion.get_name() or "Unnamed Assertion"
         metadata = {"message": message.to_dict()}
-        self._execute_and_record_assertion(assertion, assertion_name, metadata)
+        if not hasattr(message, 'session_id') or not message.session_id:
+            raise ValueError("Message is not associated with a session, cannot record assertion.")
+        session = self.get_session(message.session_id)
+        self._execute_and_record_assertion(assertion, assertion_name, metadata, session=session)
 
     def setup_agents(self):
         """Override this method to define agents for test suite"""
@@ -148,7 +149,7 @@ class MaiaTest(ABC, ProviderMixin):
             self._run_message_assertion(assertion_object, message=response_msg)
         return wrapper
 
-    def create_session(self, agent_names: List[str] = None, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: Agent = None, orchestration_policy: OrchestrationPolicy = None, validators: List[Callable[[Session], None]] = None) -> Session:
+    def create_session(self, agent_names: List[str] = None, assertions: List[Callable[[Message], None]] = None, session_id: str = None, orchestration_agent: Agent = None, orchestration_policy: OrchestrationPolicy = None, validators: List[Callable[[Session], None]] = None, judge_agent: JudgeAgent = None) -> Session:
         """Create a new session with specified agents"""
         bus = CommunicationBus()
 
@@ -157,7 +158,10 @@ class MaiaTest(ABC, ProviderMixin):
             for original_assertion in assertions:
                 wrapped_assertions.append(self._create_assertion_wrapper(original_assertion))
 
-        session = Session(bus, wrapped_assertions, session_id, orchestration_agent, orchestration_policy, validators)
+        session = Session(bus, wrapped_assertions, session_id, orchestration_agent, orchestration_policy, validators, judge_agent=judge_agent)
+
+        session.assertion_results = []
+        session.validator_results = []
 
         agents_to_add = []
         if agent_names:
@@ -182,13 +186,13 @@ class MaiaTest(ABC, ProviderMixin):
         validator_name = validator.__name__
         try:
             validator(session)
-            self.validator_results.append(ValidatorResult(
+            session.validator_results.append(ValidatorResult(
                 name=validator_name,
                 status="passed"
             ))
         except AssertionError as e:
             failure_details = {"error": str(e), "traceback": traceback.format_exc()}
-            self.validator_results.append(ValidatorResult(
+            session.validator_results.append(ValidatorResult(
                 name=validator_name,
                 status="failed",
                 details=failure_details
@@ -215,5 +219,4 @@ class MaiaTest(ABC, ProviderMixin):
                     raise ValueError(f"Agent '{name}' not configured")
                 if name not in session.bus.agents:
                     session.add_participant(self.agents[name])
-
         return session

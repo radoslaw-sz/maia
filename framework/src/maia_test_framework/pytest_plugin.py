@@ -42,8 +42,10 @@ def pytest_runtest_makereport(item, call):
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item):
-    """Run validators after test execution but before teardown"""
+    """Run validators and judge after test execution but before teardown"""
     from maia_test_framework.testing.base import MaiaTest, ValidatorResult
+    import asyncio
+    import traceback
     
     # Run the actual test
     outcome = yield
@@ -54,32 +56,61 @@ def pytest_runtest_call(item):
         
     test_instance = item.instance
     
-    # Only run validators if the test didn't already fail
+    # Only run if the test didn't already fail
     if not outcome.excinfo:
         
-        validator_failures = []
+        failures = []
         
         for session in test_instance.sessions:
+            # Run validators
             for validator in session.validators:
                 try:
                     validator(session)
-                    test_instance.validator_results.append(ValidatorResult(
+                    session.validator_results.append(ValidatorResult(
                         name=validator.__name__,
                         status="passed"
                     ))
                 except Exception as e:
                     failure_details = {"error": str(e), "traceback": traceback.format_exc()}
-                    test_instance.validator_results.append(ValidatorResult(
+                    session.validator_results.append(ValidatorResult(
                         name=validator.__name__,
                         status="failed",
                         details=failure_details
                     ))
-                    validator_failures.append(f"Validator '{validator.__name__}' failed: {str(e)}")
-        
-        # If any validators failed, fail the test
-        if validator_failures:
-            failure_message = "Test validators failed:\n" + "\n".join(validator_failures)
+                    failures.append(f"Validator '{validator.__name__}' failed: {str(e)}")
+
+            # Run judge
+            if hasattr(session, 'judge_agent') and session.judge_agent and not session.judge_result:
+                judge_failures = []
+                try:
+                    result = asyncio.run(session.judge())
+                    session.judge_result = result # Store for reporting
+
+                    if result.verdict == "FAILURE":
+                        judge_failures.append(f"JudgeAgent marked session as FAILURE with score {result.score}. Reason: {result.reasoning}")
+                    
+                    if result.requirements:
+                        failed_requirements = [req for req in result.requirements if req.verdict == "FAILURE"]
+                        if failed_requirements:
+                            error_messages = [f"Requirement '{req.requirement}' was not met. Reason: {req.reasoning}" for req in failed_requirements]
+                            judge_failures.append("Judge marked one or more requirements as FAILURE:\n" + "\n".join(error_messages))
+                    
+                    failures.extend(judge_failures)
+
+                except Exception as e:
+                    failure_details = {"error": str(e), "traceback": traceback.format_exc()}
+                    session.validator_results.append(ValidatorResult(
+                        name="JudgeAgentExecutionError",
+                        status="failed",
+                        details=failure_details
+                    ))
+                    failures.append(f"JudgeAgent execution failed: {str(e)}")
+
+        # If any validators or judge failed, fail the test
+        if failures:
+            failure_message = "Test validation failed:\n" + "\n".join(failures)
             pytest.fail(failure_message)
+
 
 def pytest_runtest_teardown(item):
     """Called after test teardown. Save test results here."""
@@ -117,10 +148,32 @@ def pytest_runtest_teardown(item):
                 elif participant_id in test_instance.tools:
                     all_participants[participant_id] = Participant(id=participant_id, name=participant_id, type="tool")
 
+        judge_result_data = None
+        if hasattr(s, 'judge_result') and s.judge_result:
+            req_results_data = []
+            if s.judge_result.requirements:
+                for r in s.judge_result.requirements:
+                    req_results_data.append({
+                        "requirement": r.requirement,
+                        "verdict": r.verdict,
+                        "score": r.score,
+                        "reasoning": r.reasoning
+                    })
+            
+            judge_result_data = {
+                "verdict": s.judge_result.verdict,
+                "score": s.judge_result.score,
+                "reasoning": s.judge_result.reasoning,
+                "requirements": req_results_data
+            }
+
         session_data.append({
             "id": s.id,
             "participants": list(session_participant_ids),
             "messages": history,
+            "assertions": [{"id": ar.id, "assertion_name": ar.assertion_name, "description": ar.description, "status": ar.status, "metadata": ar.metadata} for ar in getattr(s, 'assertion_results', [])],
+            "validators": [{"name": vr.name, "status": vr.status, "details": vr.details} for vr in getattr(s, 'validator_results', [])],
+            "judge_result": judge_result_data
         })
     
     participants = list(all_participants.values())
@@ -131,9 +184,7 @@ def pytest_runtest_teardown(item):
         end_time=datetime.now().isoformat(),
         status=final_pytest_status,
         participants=participants,
-        sessions=session_data,
-        assertions=test_instance.assertion_results,
-        validators=test_instance.validator_results
+        sessions=session_data
     )
 
     if _run_output_dir:
@@ -159,6 +210,13 @@ def pytest_sessionfinish(session, exitstatus):
                 "test_file": str(file_path),
                 "error": f"Failed to load: {e}"
             })
+
+    # Write unified report
+    out_path = Path(report_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(merged_results, f, indent=2)
 
     # Write unified report
     out_path = Path(report_path)

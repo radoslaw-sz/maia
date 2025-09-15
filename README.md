@@ -14,6 +14,8 @@
 - **Multi-Agent Simulation**: Simulate conversations and interactions between multiple AI agents.
 - **Extensible Provider Model**: Easily integrate with various AI model providers
 - **Built-in Assertions**: A suite of assertions to verify agent behavior, including content analysis and participation checks.
+- **Orchestration policies**: Decide how messages shall be routed.
+- **Judge agent**: Specialized agent for judging if result of a test is proper or not
 - **Tool Integration**: Agents can use external tools to perform actions.
 
 ## Integrations
@@ -128,6 +130,32 @@ async def test_agent_participation(self):
     assert_agent_participated(session, "reviewer")
 ```
 
+#### Judge agent
+
+Create specialized agent to judge if result is ok or not.
+
+```python
+import pytest
+from maia_test_framework.core.judge_agent import JudgeAgent
+from maia_test_framework.testing.base import MaiaTest
+
+def setup_agents(self):
+    self.create_agent(
+        name="RecipeBot",
+        provider=self.get_provider("ollama"),
+        system_message="You are a helpful assistant that provides recipes.",
+    )
+
+@pytest.mark.asyncio
+async def test_judge_successful_conversation(self):
+    """Tests that the JudgeAgent correctly identifies a successful conversation."""
+    judge_agent = JudgeAgent(self.get_provider("ollama"))
+    session = self.create_session(["RecipeBot"], judge_agent=judge_agent)
+
+    await session.user_says("Can you give me a simple recipe for pancakes?")
+    await session.agent_responds("RecipeBot")
+```
+
 ## Running Tests
 
 Run your tests using `pytest`:
@@ -159,9 +187,18 @@ The project includes a Next.js-based dashboard to visualize test reports.
 1.  **Generate Test Reports**: Run your `pytest` tests as usual. The framework will automatically generate JSON report files in the `test_reports/` directory.
 
 2.  **Run the Dashboard**:
+    1. Using Git clone  
+
     ```bash
+    git clone https://github.com/radoslaw-sz/maia.git
     cd dashboard
     yarn install
+    yarn dev
+    ```
+    2. Using CLI
+    ```bash
+    npx @maiaframework/create-maia-dashboard my-dashboard
+    cd my-dashboard
     yarn dev
     ```
 

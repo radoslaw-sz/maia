@@ -1,0 +1,15 @@
+{
+  "name": "@maiaframework/create-maia-dashboard",
+  "version": "0.0.7",
+  "description": "Create Maia Dashboard app with one command",
+  "main": "bin/index.js",
+  "bin": {
+    "create-maia-dashboard": "bin/index.js"
+  },
+  "files": [
+    "bin",
+    "templates"
+  ],
+  "keywords": ["nextjs", "dashboard", "maia", "template"],
+  "license": "Apache-2.0"
+}
